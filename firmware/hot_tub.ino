@@ -105,11 +105,12 @@ void hot_tub::allOff()
 uint8_t hot_tub::poll()
 {
   uint8_t out_of_use = 0;
+  this->errorChecking();
 
   this->readTemp();
   this->checkRuntime();
-
-  if (this->errorChecking() == 0)
+  
+  if (m_error_code == 0)
   {
     out_of_use = (this->outOfUse());
     this->filtering(out_of_use, out_of_use); //Force filter cycle whitout ozone when out of use
@@ -150,7 +151,7 @@ uint8_t hot_tub::outOfUse()
 
 uint8_t hot_tub::errorChecking()
 {
-  if (m_current_temperature >= m_max_temperature)
+  if (m_current_temperature > m_max_temperature)
   {
     m_error_code = hot_tub_error_overtemp;
   }
@@ -624,10 +625,8 @@ void hot_tub::setMaxTemperature(float max_temperature)
 
 void hot_tub::setDesiredTemperature(float desired_temperature)
 {
-  if (desired_temperature <= m_max_temperature)
+  if ((desired_temperature <= m_max_temperature) & (desired_temperature >= m_min_temperature))
     m_desired_temperature = desired_temperature;
-  else
-    m_desired_temperature = m_max_temperature;
 }
 
 void hot_tub::increaseDesiredTemperature()

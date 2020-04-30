@@ -1,5 +1,8 @@
 #include <math.h>
 
+
+const float   thermistor_temp_offset      = -2.0;
+
 const int     thermistor_adc_resolution   = pow(2, 10);
 const float   thermistor_ref_voltage      = 5.087;
 const long    thermistor_series_resistor  = 10000;
@@ -8,7 +11,6 @@ const uint8_t thermistor_average_samples  = 10;
 const long    thermistor_nominal_value    = 30000;
 const int     thermistor_nominal_temp     = 25;
 const int     thermistor_b_coefficient    = 3762;
-
 
 float thermistorRead()
 {
@@ -26,6 +28,8 @@ float thermistorRead()
   steinhart += 1.0 / (thermistor_nominal_temp + 273.15); // + (1/To)
   steinhart = 1.0 / steinhart;                 // Invert
   steinhart -= 273.15;                         // convert to C
+
+  steinhart += thermistor_temp_offset;
 
   return 0.5 * round(2.0 * steinhart); //Round to half integer
 }

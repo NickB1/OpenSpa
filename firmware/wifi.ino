@@ -1,4 +1,5 @@
 
+#include <string.h>
 #include <ESP8266WiFi.h>
 #include <time.h>                       // time() ctime()
 #include <sys/time.h>                   // struct timeval
@@ -106,14 +107,21 @@ void mqttHandler(void)
       Adafruit_MQTT_Subscribe *subscription;
 
       subscription = mqtt.readSubscription();
-      
+
       if (subscription)
       {
         if (subscription == &mqtt_openspa_command)
         {
           //Serial.print(F("Command received: "));
           //Serial.println((char *)mqtt_openspa_command.lastread);
-          jacuzzi.setDesiredTemperature(atof((char *)mqtt_openspa_command.lastread));
+          //if (strcmp((char *)mqtt_openspa_command.lastread,"reset"))
+          //{
+          //  openspaReset();
+          //}
+          //else
+          //{
+            jacuzzi.setDesiredTemperature(atof((char *)mqtt_openspa_command.lastread));
+          //}
         }
       }
 

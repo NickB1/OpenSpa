@@ -27,7 +27,7 @@ void setup()
     wifiInit();
   delay(10);
   consolePrintCommands();
-  mainRelay(true);
+  setMainRelay(true);
 }
 
 void loop()
@@ -37,7 +37,7 @@ void loop()
   if (openspa_error == false)
     openspa_error = jacuzzi.poll();
   else
-    mainRelay(false);
+    setMainRelay(false);
 
   displayHandler();
   consoleHandler();
@@ -82,11 +82,7 @@ uint8_t openspaErrorHandler()
   {
     delay(10);
     io_expander_reset_state_prv = false;
-    ioExpanderInit();
-    digitalWrite(pin_o_io_expander_reset, HIGH);
-    jacuzzi.reset();
-    openspa_error = 0;
-    Serial.println("Reset released");
+    openspaReset();
   }
 
   io_expander_reset_state_prv = ioReadIOExpanderReset();
@@ -99,7 +95,15 @@ uint8_t openspaErrorHandler()
   return 0;
 }
 
-void mainRelay(uint8_t state)
+void openspaReset()
+{
+    ioExpanderInit();
+    digitalWrite(pin_o_io_expander_reset, HIGH);
+    jacuzzi.reset();
+    openspa_error = 0;
+}
+
+void setMainRelay(uint8_t state)
 {
   static uint8_t current_state = 0;
 

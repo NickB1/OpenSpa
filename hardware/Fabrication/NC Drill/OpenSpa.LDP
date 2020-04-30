@@ -1,0 +1,3 @@
+Layer Pairs Export File for PCB: E:\Development\Altium - PCBs\Projects Out\OpenSpa\01\PCB.PcbDoc
+LayersSetName=Top_Bot_Plated_Thru_Holes|DrillFile=pcb1401-plated.txt|DrillLayers=gtl,gbl
+LayersSetName=Top_Bot_NonPlated_Thru_Holes|DrillFile=pcb1401-nonplated.txt|DrillLayers=gtl,gbl
