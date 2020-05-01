@@ -32,6 +32,7 @@ class hot_tub
     void decreaseDesiredTemperature();
     float currentTemperature();
     float desiredTemperature();
+    float maxTemperature();
 
     void setMaxTotalPower(uint16_t power);
     void setHeaterPower(uint16_t power);
@@ -95,16 +96,19 @@ class hot_tub
     peripheral m_periph_light;
     uint8_t m_pin_pressure_switch;
 
-    float m_min_temperature = 5.0;
-    float m_max_temperature = 38.0;
+    float m_min_temperature_limit = 5.0;
+    float m_max_temperature_limit = 38.0;
     float m_current_temperature = 35.0;
     float m_desired_temperature = 35.0;
-    float m_initial_temperature = 35.0;
+    float m_heating_initial_temperature = 35.0;
+    float m_max_temperature = 0.0;
     const float m_desired_temperature_increment = 0.5;
     const float m_desired_temperature_delta_plus = 0.5; //Heating OFF
     const float m_desired_temperature_delta_minus = -0.5; //Heating ON
 
-    uint16_t m_heating_timeout                 = 3600; //seconds
+    const uint16_t m_heater_turn_on_delay_s = 5;
+    uint16_t m_heating_holdoff_time         = 60; //seconds
+    uint16_t m_heating_timeout              = 3600; //seconds
     float m_heating_timeout_delta_degrees   = 1.0;
 
     uint16_t m_filter_window_start_time  = 900;  //hours:minutes
@@ -129,7 +133,6 @@ class hot_tub
     uint16_t m_total_power = 0;
     uint8_t m_filtering_run = 0, m_filtering_ozone_enabled = 0, m_heating_run = 0;
 
-    const uint16_t m_heater_turn_on_delay_s = 5;
     const uint16_t m_pressure_switch_max_delay_s = 5; //Delay in seconds for the pressure switch to enable after turning on circ pump
 
     void ioWrite(uint8_t pin, uint8_t state);

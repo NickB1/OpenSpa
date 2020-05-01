@@ -20,7 +20,7 @@ hot_tub::hot_tub(uint8_t pin_o_main,   uint8_t pin_o_heater,           uint8_t p
 }
 
 
-//External callbacks
+//External functions
 
 void hot_tub::ioWrite(uint8_t pin, uint8_t state)
 {
@@ -38,6 +38,10 @@ void hot_tub::readTemp()
   if ((this->timePassed(timestamp)) > 1) //Sample every second
   {
     m_current_temperature = thermistorRead();
+    if(m_current_temperature > m_max_temperature)
+    {
+      m_max_temperature = m_current_temperature;
+    }
     timestamp = this->timeStamp();
   }
 }
@@ -109,7 +113,7 @@ uint8_t hot_tub::poll()
 
   this->readTemp();
   this->checkRuntime();
-  
+
   if (m_error_code == 0)
   {
     out_of_use = (this->outOfUse());
@@ -151,39 +155,45 @@ uint8_t hot_tub::outOfUse()
 
 uint8_t hot_tub::errorChecking()
 {
-  if (m_current_temperature > m_max_temperature)
+  //Max Temperature
+  if (m_current_temperature > m_max_temperature_limit)
   {
     m_error_code = hot_tub_error_overtemp;
   }
 
+  //Temp sensor
   if ((m_current_temperature < 0) & (hot_tub_debug == 0))
   {
     m_error_code = hot_tub_error_temp_sensor;
   }
 
-
+  //Heater
   if (this->getHeaterState())
   {
+    //Heater on without circulation pump
     if (this->getCircPumpState() == false)
     {
       m_error_code = hot_tub_error_heating_on_without_circ_pump;
     }
 
+    //Heater timeout
     if ((this->timePassed(m_periph_heater.timestamp)) > m_heating_timeout)
     {
-      if (m_current_temperature < (m_initial_temperature + m_heating_timeout_delta_degrees))
+      if (m_current_temperature < (m_heating_initial_temperature + m_heating_timeout_delta_degrees))
       {
         m_error_code = hot_tub_error_heating_timeout;
       }
     }
   }
 
+  //Pressure switch always on
   if ((this->getPressureSwitchState() == true) and (this->getCircPumpState() == false) and ((this->timePassed(m_periph_circ_pump.timestamp)) > m_pressure_switch_max_delay_s))
   {
     m_error_code = hot_tub_error_pressure_switch_always_on;
   }
 
 
+  //Pressure switch failed
   static uint8_t circ_pump_state_prv = 0;
 
   if ((this->getCircPumpState() == true) and (circ_pump_state_prv = false))
@@ -318,13 +328,20 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
 
 void hot_tub::heating()
 {
-  if ((m_current_temperature - m_desired_temperature) <=  m_desired_temperature_delta_minus)
+  static int timestamp = 0;
+
+  if (timePassed(timestamp) >= m_heating_holdoff_time)
   {
-    m_heating_run = true;
-  }
-  else if ((m_current_temperature - m_desired_temperature) >=  m_desired_temperature_delta_plus)
-  {
-    m_heating_run = false;
+    if ((m_current_temperature - m_desired_temperature) <=  m_desired_temperature_delta_minus)
+    {
+      timestamp = timeStamp();
+      m_heating_run = true;
+    }
+    else if ((m_current_temperature - m_desired_temperature) >=  m_desired_temperature_delta_plus)
+    {
+      timestamp = timeStamp();
+      m_heating_run = false;
+    }
   }
 }
 
@@ -615,32 +632,32 @@ uint16_t hot_tub::getFlushingNextCycleTime()
 
 void hot_tub::setMinTemperature(float min_temperature)
 {
-  m_min_temperature = min_temperature;
+  m_min_temperature_limit = min_temperature;
 }
 
 void hot_tub::setMaxTemperature(float max_temperature)
 {
-  m_max_temperature = max_temperature;
+  m_max_temperature_limit = max_temperature;
 }
 
 void hot_tub::setDesiredTemperature(float desired_temperature)
 {
-  if ((desired_temperature <= m_max_temperature) & (desired_temperature >= m_min_temperature))
+  if ((desired_temperature <= m_max_temperature_limit) & (desired_temperature >= m_min_temperature_limit))
     m_desired_temperature = desired_temperature;
 }
 
 void hot_tub::increaseDesiredTemperature()
 {
   m_desired_temperature += m_desired_temperature_increment;
-  if (m_desired_temperature > m_max_temperature)
-    m_desired_temperature = m_max_temperature;
+  if (m_desired_temperature > m_max_temperature_limit)
+    m_desired_temperature = m_max_temperature_limit;
 }
 
 void hot_tub::decreaseDesiredTemperature()
 {
   m_desired_temperature -= m_desired_temperature_increment;
-  if (m_desired_temperature < m_min_temperature)
-    m_desired_temperature = m_min_temperature;
+  if (m_desired_temperature < m_min_temperature_limit)
+    m_desired_temperature = m_min_temperature_limit;
 }
 
 float hot_tub::currentTemperature()
@@ -652,6 +669,11 @@ float hot_tub::currentTemperature()
 float hot_tub::desiredTemperature()
 {
   return m_desired_temperature;
+}
+
+float hot_tub::maxTemperature()
+{
+  return m_max_temperature;
 }
 
 
@@ -677,7 +699,7 @@ void hot_tub::setHeater(uint8_t state)
     m_periph_heater.state = state;
     this->ioWrite(m_periph_heater.pin, m_periph_heater.state);
   }
-  m_initial_temperature = m_current_temperature;
+  m_heating_initial_temperature = m_current_temperature;
   m_periph_heater.timestamp = this->timeStamp();
 }
 

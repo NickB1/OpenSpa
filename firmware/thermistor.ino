@@ -1,12 +1,12 @@
 #include <math.h>
 
-
 const float   thermistor_temp_offset      = -2.0;
 
 const int     thermistor_adc_resolution   = pow(2, 10);
 const float   thermistor_ref_voltage      = 5.087;
 const long    thermistor_series_resistor  = 10000;
 const uint8_t thermistor_average_samples  = 10;
+float         thermistor_sample[thermistor_average_samples]  = {0.0};
 
 const long    thermistor_nominal_value    = 30000;
 const int     thermistor_nominal_temp     = 25;
@@ -31,5 +31,20 @@ float thermistorRead()
 
   steinhart += thermistor_temp_offset;
 
-  return 0.5 * round(2.0 * steinhart); //Round to half integer
+  return 0.5 * round(2.0 * thermistorRunningAverage(steinhart)); //Round to half integer
+}
+
+float thermistorRunningAverage(float sample)
+{
+  float samples_sum = 0;
+
+  for (int i = (thermistor_average_samples - 1); i > 0; i--)
+  {
+    thermistor_sample[i] = thermistor_sample[i - 1];
+    samples_sum += thermistor_sample[i];
+  }
+  thermistor_sample[0] = sample;
+  samples_sum += thermistor_sample[0];
+
+  return samples_sum / thermistor_average_samples;
 }

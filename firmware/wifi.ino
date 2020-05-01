@@ -127,9 +127,9 @@ void mqttHandler(void)
 
       char openspa_status_string[100];
 
-      sprintf(openspa_status_string, "%d, %d, %d, %d, %.2f, %.2f, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
+      sprintf(openspa_status_string, "%d, %d, %d, %d, %.2f, %.2f, %.2f, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
               openspa_error, timeOfDay(), jacuzzi.getErrorCode(), jacuzzi.getStatus(),
-              jacuzzi.currentTemperature(), jacuzzi.desiredTemperature(), jacuzzi.getFilteringStatus(), jacuzzi.getHeatingStatus(),
+              jacuzzi.currentTemperature(), jacuzzi.desiredTemperature(), jacuzzi.maxTemperature(), jacuzzi.getFilteringStatus(), jacuzzi.getHeatingStatus(),
               jacuzzi.getFilteringNextCycleTime(), jacuzzi.getFlushingNextCycleTime(), jacuzzi.getHeaterState(), jacuzzi.getCircPumpState(),
               jacuzzi.getPump_1_State(), jacuzzi.getPump_2_State(), jacuzzi.getBlowerState(), jacuzzi.getOzoneState(), jacuzzi.getLightState());
 
