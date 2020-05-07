@@ -40,10 +40,12 @@ void consolePrintStatus()
   Serial.println(jacuzzi.getErrorCode());
   Serial.print("Status: ");
   Serial.println(jacuzzi.getStatus());
-  Serial.print("Temperature: ");
-  Serial.println(jacuzzi.currentTemperature(), 2);
   Serial.print("Temperature desired: ");
   Serial.println(jacuzzi.desiredTemperature(), 2);
+  Serial.print("Temperature: ");
+  Serial.println(jacuzzi.currentTemperature(), 2);
+  Serial.print("Temperature max: ");
+  Serial.println(jacuzzi.maxTemperature(), 2);
   Serial.print("Filter status: ");
   Serial.println(jacuzzi.getFilteringStatus());
   Serial.print("Heating status: ");
@@ -66,6 +68,20 @@ void consolePrintStatus()
   Serial.println(jacuzzi.getOzoneState());
   Serial.print("Light state: ");
   Serial.println(jacuzzi.getLightState());
+  Serial.println();
+  Serial.println("WiFi");
+  Serial.println("________________");
+  Serial.print("Status: ");
+  Serial.println(WiFi.status());
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("WiFi Reconnects: ");
+  Serial.print("WiFi RSSI: ");
+  Serial.print(WiFi.RSSI());
+  Serial.println("dBm");
+  Serial.println(wifi_reconnects);
+  Serial.print("MQTT Reconnects: ");
+  Serial.println(mqtt_reconnects);
 }
 
 void consoleHandler()

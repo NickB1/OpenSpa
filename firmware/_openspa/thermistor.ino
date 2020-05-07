@@ -1,3 +1,4 @@
+
 #include <math.h>
 
 const float   thermistor_temp_offset      = -2.0;

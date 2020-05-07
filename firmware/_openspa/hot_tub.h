@@ -1,3 +1,4 @@
+
 const uint8_t hot_tub_debug = 0;
 
 #define hot_tub_status_idle                           0
@@ -106,7 +107,8 @@ class hot_tub
     const float m_desired_temperature_delta_plus = 0.5; //Heating OFF
     const float m_desired_temperature_delta_minus = -0.5; //Heating ON
 
-    const uint16_t m_heater_turn_on_delay_s = 5;
+    const uint16_t m_filter_heater_state_delay_s = 5;
+    const uint16_t m_filter_heater_unpause_delay_s = 10;
     uint16_t m_heating_holdoff_time         = 60; //seconds
     uint16_t m_heating_timeout              = 3600; //seconds
     float m_heating_timeout_delta_degrees   = 1.0;

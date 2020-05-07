@@ -38,7 +38,7 @@ void hot_tub::readTemp()
   if ((this->timePassed(timestamp)) > 1) //Sample every second
   {
     m_current_temperature = thermistorRead();
-    if(m_current_temperature > m_max_temperature)
+    if (m_current_temperature > m_max_temperature)
     {
       m_max_temperature = m_current_temperature;
     }
@@ -109,7 +109,8 @@ void hot_tub::allOff()
 uint8_t hot_tub::poll()
 {
   uint8_t out_of_use = 0;
-  this->errorChecking();
+  if (hot_tub_debug == 0)
+    this->errorChecking();
 
   this->readTemp();
   this->checkRuntime();
@@ -288,9 +289,9 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
       if (force_filter_cycle)
         filtering_state = start_filtering;
 
-      if ((m_filter_window_start_time < time_of_day) and (m_filter_window_stop_time > time_of_day))
+      if ((m_filter_window_start_time <= time_of_day) and (m_filter_window_stop_time >= time_of_day))
       {
-        if (time_of_day >= m_filter_next_cycle_time)
+        if (time_of_day == m_filter_next_cycle_time)
           filtering_state = start_filtering;
       }
       else
@@ -306,6 +307,10 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
 
     case start_filtering:
       m_filter_next_cycle_time = this->getNextCycleTime(cycle_period);
+      if (m_filter_next_cycle_time > m_filter_window_stop_time)
+      {
+        m_filter_next_cycle_time = m_filter_window_start_time;
+      }
       timestamp = this->timeStamp();
       filter_cycle++;
       m_filtering_run = true;
@@ -350,7 +355,6 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
   enum enum_filter_heater_state { idle, start_pump, filtering, start_heater, heating, pause, unpause};
   static enum_filter_heater_state filter_heater_state = pause;
   static unsigned long timestamp = 0;
-  uint8_t unpause_delay = 10;
 
   if (reset)
   {
@@ -362,19 +366,24 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
   {
     case idle:
       m_status = hot_tub_status_idle;
+
       if (m_filtering_run | m_heating_run)
       {
         if ((this->getPumpsAndBlowerState()) == 0) //only start when all pumps and blower are turned off
           filter_heater_state = start_pump;
       }
+
+      this->setCircPump(false);
+      this->setHeater(false);
+      this->setOzone(false);
+
       break;
 
     case start_pump:
-      timestamp = this->timeStamp();
-      this->setCircPump(true);
-
       if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
         filter_heater_state = pause;
+
+      this->setCircPump(true);
 
       if (m_filtering_ozone_enabled)
         this->setOzone(true);
@@ -387,10 +396,10 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
       break;
 
     case filtering:
-      m_status = hot_tub_status_filtering;
-
       if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
         filter_heater_state = pause;
+
+      m_status = hot_tub_status_filtering;
 
       if (m_filtering_run == false)
       {
@@ -398,9 +407,11 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
         this->setCircPump(false);
         this->setOzone(false);
       }
-
       else if (m_heating_run == true)
+      {
         filter_heater_state = start_heater;
+        timestamp = this->timeStamp();
+      }
 
       break;
 
@@ -408,27 +419,30 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
       if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
         filter_heater_state = pause;
 
-      if ((this->timePassed(timestamp)) >= m_heater_turn_on_delay_s)
+      if ((this->timePassed(timestamp)) >= m_filter_heater_state_delay_s)
       {
         this->setHeater(true);
         filter_heater_state = heating;
+        timestamp = this->timeStamp();
       }
-
       break;
 
     case heating:
+      if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
+        filter_heater_state = pause;
+
       if (m_filtering_run)
         m_status = hot_tub_status_filtering_heating;
       else
         m_status = hot_tub_status_heating;
 
-      if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
-        filter_heater_state = pause;
-
-      if (m_heating_run == false)
+      if ((this->timePassed(timestamp)) >= m_filter_heater_state_delay_s)
       {
-        this->setHeater(false);
-        filter_heater_state = filtering;
+        if (m_heating_run == false)
+        {
+          this->setHeater(false);
+          filter_heater_state = filtering;
+        }
       }
 
       break;
@@ -449,7 +463,7 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
       if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
         filter_heater_state = pause;
 
-      if ((this->timePassed(timestamp)) > unpause_delay)
+      if ((this->timePassed(timestamp)) > m_filter_heater_unpause_delay_s)
         filter_heater_state = idle;
       break;
 
@@ -467,7 +481,7 @@ void hot_tub::flushing()
   uint16_t time_of_day = 0;
   static unsigned long timestamp = 0;
   enum enum_flushing_state { idle, start_flushing, start_blower, flushing_blower, start_pump_1, flushing_pump_1, start_pump_2,  flushing_pump_2 };
-  static enum_flushing_state flushing_state = start_flushing; //start flushing on startup
+  static enum_flushing_state flushing_state = start_flushing;
   static uint16_t cycle_period = this->getCyclePeriod(m_flush_window_start_time, m_flush_window_stop_time, m_flush_time_pump_1_s, m_flush_daily_cycles);
   static uint8_t flush_cycle = 0;
   uint8_t flush_inter_delay_s = 3;
@@ -475,14 +489,14 @@ void hot_tub::flushing()
 
   time_of_day = this->getTimeOfDay();
 
-  if ((m_flush_window_start_time < time_of_day) and (m_flush_window_stop_time > time_of_day))
+  if ((m_flush_window_start_time <= time_of_day) and (m_flush_window_stop_time >= time_of_day))
   {
     flushing_started = 1;
 
     switch (flushing_state)
     {
       case idle:
-        if (getPumpsAndBlowerState()) //Hold off flushing when pumps or blower are in use
+        if (this->getPumpsAndBlowerState()) //Hold off flushing when pumps or blower are in use
         {
           pumps_and_blower_state_prv = 1;
         }
@@ -493,13 +507,17 @@ void hot_tub::flushing()
         }
         else
         {
-          if (time_of_day >= m_flush_next_cycle_time)
+          if (time_of_day == m_flush_next_cycle_time)
             flushing_state = start_flushing;
         }
         break;
 
       case start_flushing:
         m_flush_next_cycle_time = this->getNextCycleTime(cycle_period);
+        if (m_flush_next_cycle_time > m_flush_window_stop_time)
+        {
+          m_flush_next_cycle_time = m_flush_window_start_time;
+        }
         timestamp = this->timeStamp();
         flush_cycle++;
         flushing_state = start_blower;

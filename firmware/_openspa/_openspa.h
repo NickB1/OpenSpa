@@ -3,21 +3,12 @@
 const uint8_t   openspa_wifi_enable =     1;
 #define         openspa_wifi_ssid         "YOUR_WIFI_SSID"
 #define         openspa_wifi_pass         "YOUR_WIFI_PASSWORD"
-const float     openspa_timezone =        1;
-const uint8_t   openspa_dst =             1;
+#define         openspa_timezone          TZ_Europe_Brussels
 #define         openspa_ntp_servers       "europe.pool.ntp.org", "time.nist.gov"
 #define         openspa_mqtt_broker_ip    "MQTT_BROKER_IP"
 #define         openspa_mqtt_broker_port   1883 // use 8883 for SSL
 #define         openspa_mqtt_username     "MQTT_USERNAME"
 #define         openspa_mqtt_password     "MQTT_PASSWORD"
-
-//Power in Watts
-const uint16_t openspa_power_total_max     = 3600;
-const uint16_t openspa_power_heater        = 2500;
-const uint16_t openspa_power_pump_circ     = 400;
-const uint16_t openspa_power_pump_1        = 1200;
-const uint16_t openspa_power_pump_2        = 500;
-const uint16_t openspa_power_blower        = 500;
 
 //Maximum - minimum temperatures
 const float openspa_init_desired_temp   = 35.0;
@@ -50,3 +41,11 @@ const uint16_t openspa_runtime_pump_2      = 900;  //seconds
 const uint16_t openspa_resttime_pump_2     = 60;   //seconds
 const uint16_t openspa_runtime_blower      = 900;  //seconds
 const uint16_t openspa_resttime_blower     = 60;   //seconds
+
+//Power in Watts - not implemented yet
+const uint16_t openspa_power_total_max     = 3600;
+const uint16_t openspa_power_heater        = 2500;
+const uint16_t openspa_power_pump_circ     = 400;
+const uint16_t openspa_power_pump_1        = 1200;
+const uint16_t openspa_power_pump_2        = 500;
+const uint16_t openspa_power_blower        = 500;

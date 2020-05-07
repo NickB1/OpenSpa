@@ -6,6 +6,7 @@
 #include "io_expander.h"
 #include "hot_tub.h"
 #include "balboa_display.h"
+#include "wifi.h"
 
 hot_tub jacuzzi(epin_o_main,    epin_o_heater,          epin_o_circulation_pump,
                 epin_o_pump_1,  epin_o_pump_1_speed,    epin_o_pump_2,
