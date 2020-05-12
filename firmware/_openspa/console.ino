@@ -32,7 +32,8 @@ void consolePrintStatus()
   Serial.print("Time: ");
   Serial.print(ctime(&now));
   Serial.print("Time of day: ");
-  Serial.println(timeOfDay());
+  Serial.printf("%04d",timeOfDay());
+  Serial.println();
   Serial.println();
   Serial.println("Hot Tub");
   Serial.println("________________");
@@ -51,9 +52,11 @@ void consolePrintStatus()
   Serial.print("Heating status: ");
   Serial.println(jacuzzi.getHeatingStatus());
   Serial.print("Filter next cycle time: ");
-  Serial.println(jacuzzi.getFilteringNextCycleTime());
+  Serial.printf("%04d",jacuzzi.getFilteringNextCycleTime());
+  Serial.println();
   Serial.print("Flush next cycle time: ");
-  Serial.println(jacuzzi.getFlushingNextCycleTime());
+  Serial.printf("%04d",jacuzzi.getFlushingNextCycleTime());
+  Serial.println();
   Serial.print("Heater state: ");
   Serial.println(jacuzzi.getHeaterState());
   Serial.print("Circulation pump state: ");
@@ -75,13 +78,15 @@ void consolePrintStatus()
   Serial.println(WiFi.status());
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-  Serial.print("WiFi Reconnects: ");
   Serial.print("WiFi RSSI: ");
   Serial.print(WiFi.RSSI());
   Serial.println("dBm");
+  Serial.print("WiFi Reconnects: ");
   Serial.println(wifi_reconnects);
   Serial.print("MQTT Reconnects: ");
   Serial.println(mqtt_reconnects);
+  Serial.println();
+  Serial.println();
 }
 
 void consoleHandler()

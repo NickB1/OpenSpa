@@ -1,10 +1,11 @@
 
-const uint8_t hot_tub_debug = 0;
+const uint8_t hot_tub_debug = 1;
 
 #define hot_tub_status_idle                           0
-#define hot_tub_status_filtering                      1
-#define hot_tub_status_heating                        2
-#define hot_tub_status_filtering_heating              3
+#define hot_tub_status_in_use                         1
+#define hot_tub_status_filtering                      2
+#define hot_tub_status_heating                        3
+#define hot_tub_status_filtering_heating              4
 
 #define hot_tub_error_overtemp                        1
 #define hot_tub_error_pressure_switch_always_on       2
@@ -62,6 +63,7 @@ class hot_tub
     uint8_t getFilteringStatus();
     uint16_t getFilteringNextCycleTime();
     uint8_t getHeatingStatus();
+    uint8_t getFlushingStatus();
     uint16_t getFlushingNextCycleTime();
 
     uint8_t getHeaterState();
@@ -133,7 +135,7 @@ class hot_tub
 
     uint16_t m_max_total_power = 0;
     uint16_t m_total_power = 0;
-    uint8_t m_filtering_run = 0, m_filtering_ozone_enabled = 0, m_heating_run = 0;
+    uint8_t m_filtering_run = 0, m_filtering_ozone_enabled = 0, m_heating_run = 0, m_flushing_run = 0;
 
     const uint16_t m_pressure_switch_max_delay_s = 5; //Delay in seconds for the pressure switch to enable after turning on circ pump
 

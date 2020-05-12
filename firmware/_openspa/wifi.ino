@@ -41,8 +41,8 @@ uint8_t wifiConnect()
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   WiFi.begin(openspa_wifi_ssid, openspa_wifi_pass);
 
-  WiFi.setAutoConnect(true);
-  WiFi.setAutoReconnect(true);
+  //WiFi.setAutoConnect(true);
+  //WiFi.setAutoReconnect(true);
 
   while (timeout_s > 0)
   {
@@ -51,6 +51,40 @@ uint8_t wifiConnect()
 
     delay(1000);
     timeout_s--;
+  }
+  return 1;
+}
+
+uint8_t wifiReconnect()
+{
+  const uint8_t timeout_s = 10;
+  static uint8_t state = 0;
+  static unsigned long timestamp = 0;
+
+  if (WiFi.status() == WL_CONNECTED)
+  {
+    state = 0;
+    timestamp = 0;
+    return 0;
+  }
+  else
+  {
+    if (state == 0)
+    {
+      wifi_reconnects++;
+      WiFi.disconnect();
+      WiFi.begin(openspa_wifi_ssid, openspa_wifi_pass);
+      timestamp = millis();
+      state = 1;
+      Serial.println("WiFi reconnect");
+    }
+    else
+    {
+      if ((millis() - timestamp) > (timeout_s * 1000))
+      {
+        state = 0;
+      }
+    }
   }
   return 1;
 }
@@ -132,14 +166,12 @@ void mqttPublish(void)
 void mqttHandler(void)
 {
   static unsigned long time_now = 0, time_prv = 0;
-  static uint8_t wifi_cnt_holfoff = 0, mqtt_cnt_holfoff = 0;
+  static uint8_t mqtt_cnt_holfoff = 0;
 
   time_now = millis();
 
   if (WiFi.status() == WL_CONNECTED)
   {
-    wifi_cnt_holfoff = 0;
-
     if (mqtt.connected())
     {
       mqtt_cnt_holfoff = 0;
@@ -150,15 +182,6 @@ void mqttHandler(void)
 
         mqttSubscription();
         mqttPublish();
-
-        /*
-          // ping the server to keep the mqtt connection alive
-          // NOT required if you are publishing once every KEEPALIVE seconds
-
-          if(! mqtt.ping()) {
-          mqtt.disconnect();
-          }
-        */
       }
     }
     else
@@ -175,23 +198,8 @@ void mqttHandler(void)
   }
   else
   {
-    if (wifi_cnt_holfoff == 0)
-    {
-      wifi_reconnects++;
-      wifi_cnt_holfoff = 1;
-    }
+    wifiReconnect();
   }
-
-  //  }
-  //  else
-  //  {
-  //    if ((time_now - time_prv) > (wifi_reconnect_holdoff_s * 1000))
-  //    {
-  //      WiFi.mode(WIFI_STA);
-  //      WiFi.begin(openspa_wifi_ssid, openspa_wifi_pass);
-  //      time_prv = millis();
-  //    }
-  //  }
 }
 
 int timeOfDay()

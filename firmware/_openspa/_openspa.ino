@@ -98,10 +98,10 @@ uint8_t openspaErrorHandler()
 
 void openspaReset()
 {
-    ioExpanderInit();
-    digitalWrite(pin_o_io_expander_reset, HIGH);
-    jacuzzi.reset();
-    openspa_error = 0;
+  ioExpanderInit();
+  digitalWrite(pin_o_io_expander_reset, HIGH);
+  jacuzzi.reset();
+  openspa_error = 0;
 }
 
 void setMainRelay(uint8_t state)

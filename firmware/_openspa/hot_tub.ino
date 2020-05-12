@@ -510,6 +510,7 @@ void hot_tub::flushing()
           if (time_of_day == m_flush_next_cycle_time)
             flushing_state = start_flushing;
         }
+        m_flushing_run = 0;
         break;
 
       case start_flushing:
@@ -521,6 +522,7 @@ void hot_tub::flushing()
         timestamp = this->timeStamp();
         flush_cycle++;
         flushing_state = start_blower;
+        m_flushing_run = 1;
         break;
 
       case start_blower:
@@ -638,6 +640,11 @@ uint16_t hot_tub::getFilteringNextCycleTime()
 uint8_t hot_tub::getHeatingStatus()
 {
   return m_heating_run;
+}
+
+uint8_t hot_tub::getFlushingStatus()
+{
+  return m_flushing_run;
 }
 
 uint16_t hot_tub::getFlushingNextCycleTime()
