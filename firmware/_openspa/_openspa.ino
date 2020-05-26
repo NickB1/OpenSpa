@@ -44,7 +44,7 @@ void loop()
   consoleHandler();
 
   if (openspa_wifi_enable)
-    mqttHandler();
+    wifiHandler();
 }
 
 

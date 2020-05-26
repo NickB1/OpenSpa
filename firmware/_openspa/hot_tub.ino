@@ -34,7 +34,7 @@ uint8_t hot_tub::ioRead(uint8_t pin)
 
 void hot_tub::readTemp()
 {
-  static uint16_t timestamp = 0;
+  static unsigned long timestamp = 0;
   if ((this->timePassed(timestamp)) > 1) //Sample every second
   {
     m_current_temperature = thermistorRead();
@@ -134,7 +134,7 @@ uint8_t hot_tub::poll()
 uint8_t hot_tub::outOfUse()
 {
   const uint16_t min_usage_time_s = 300;
-  static uint16_t timestamp = 0;
+  static unsigned long timestamp = 0;
   static uint8_t state_prv = 0;
   uint8_t out_of_use = 0;
 
@@ -283,11 +283,18 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
 
   time_of_day = this->getTimeOfDay();
 
+  if (force_filter_cycle)
+  {
+    filtering_state = start_filtering;
+    if (force_no_ozone == 1)
+      m_filtering_ozone_enabled = false;
+    else
+      m_filtering_ozone_enabled = true;
+  }
+
   switch (filtering_state)
   {
     case idle:
-      if (force_filter_cycle)
-        filtering_state = start_filtering;
 
       if ((m_filter_window_start_time <= time_of_day) and (m_filter_window_stop_time >= time_of_day))
       {
@@ -299,15 +306,16 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
         m_filter_next_cycle_time = m_filter_window_start_time;
       }
 
-      if ((m_ozone_window_start_time < time_of_day) and (m_ozone_window_stop_time > time_of_day) and (force_no_ozone == 0)) //Check if ozone may be enabled
+      if ((m_ozone_window_start_time < time_of_day) and (m_ozone_window_stop_time > time_of_day))
         m_filtering_ozone_enabled = true;
       else
         m_filtering_ozone_enabled = false;
+        
       break;
 
     case start_filtering:
       m_filter_next_cycle_time = this->getNextCycleTime(cycle_period);
-      if (m_filter_next_cycle_time > m_filter_window_stop_time)
+      if ((m_filter_next_cycle_time < m_filter_window_start_time) or (m_filter_next_cycle_time > m_filter_window_stop_time))
       {
         m_filter_next_cycle_time = m_filter_window_start_time;
       }
@@ -333,7 +341,7 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
 
 void hot_tub::heating()
 {
-  static int timestamp = 0;
+  static unsigned long timestamp = 0;
 
   if (timePassed(timestamp) >= m_heating_holdoff_time)
   {

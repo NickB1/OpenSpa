@@ -1,5 +1,5 @@
 
-const uint8_t hot_tub_debug = 1;
+const uint8_t hot_tub_debug = 0;
 
 #define hot_tub_status_idle                           0
 #define hot_tub_status_in_use                         1

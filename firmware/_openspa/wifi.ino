@@ -163,7 +163,7 @@ void mqttPublish(void)
   mqtt_pub_openspa_status.publish(openspa_status_string);
 }
 
-void mqttHandler(void)
+void wifiHandler(void)
 {
   static unsigned long time_now = 0, time_prv = 0;
   static uint8_t mqtt_cnt_holfoff = 0;
