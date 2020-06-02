@@ -70,7 +70,7 @@ uint8_t jacuzziInit()
                        openspa_ozone_window_stop_time, openspa_filter_daily_cycles, openspa_filter_time);
   jacuzzi.setHeating(openspa_heating_timeout, openspa_heating_timeout_delta_degrees);
   jacuzzi.setFlushing(openspa_flush_window_start_time, openspa_flush_window_stop_time, openspa_flush_daily_cycles,
-                      openspa_flush_time, openspa_flush_time, openspa_flush_time);
+                      openspa_flush_time_pump_1, openspa_flush_time_pump_2, openspa_flush_time_blower);
 
   return 0;
 }

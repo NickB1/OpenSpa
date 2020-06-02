@@ -310,7 +310,7 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
         m_filtering_ozone_enabled = true;
       else
         m_filtering_ozone_enabled = false;
-        
+
       break;
 
     case start_filtering:
@@ -537,8 +537,15 @@ void hot_tub::flushing()
         if ((this->timePassed(timestamp)) >= flush_inter_delay_s)
         {
           timestamp = this->timeStamp();
-          setBlower(true, false);
-          flushing_state = flushing_blower;
+          if (m_flush_time_blower_s > 0)
+          {
+            setBlower(true, false);
+            flushing_state = flushing_blower;
+          }
+          else
+          {
+            flushing_state = start_pump_1;
+          }
         }
         break;
 
@@ -555,8 +562,16 @@ void hot_tub::flushing()
         if ((this->timePassed(timestamp)) >= flush_inter_delay_s)
         {
           timestamp = this->timeStamp();
-          setPump_1(true, false);
-          flushing_state = flushing_pump_1;
+          if (m_flush_time_pump_1_s > 0)
+          {
+            setPump_1(true, false);
+            flushing_state = flushing_pump_1;
+          }
+          else
+          {
+            flushing_state = start_pump_2;
+          }
+
         }
         break;
 
@@ -573,8 +588,15 @@ void hot_tub::flushing()
         if ((this->timePassed(timestamp)) >= flush_inter_delay_s)
         {
           timestamp = this->timeStamp();
-          setPump_2(true, false);
-          flushing_state = flushing_pump_2;
+          if (m_flush_time_pump_2_s > 0)
+          {
+            setPump_2(true, false);
+            flushing_state = flushing_pump_2;
+          }
+          else
+          {
+            flushing_state = idle;
+          }
         }
         break;
 
