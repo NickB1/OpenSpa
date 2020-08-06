@@ -137,7 +137,7 @@ class hot_tub
     uint16_t m_total_power = 0;
     uint8_t m_filtering_run = 0, m_filtering_ozone_enabled = 0, m_heating_run = 0, m_flushing_run = 0;
 
-    const uint16_t m_pressure_switch_max_delay_s = 5; //Delay in seconds for the pressure switch to enable after turning on circ pump
+    const uint16_t m_pressure_switch_max_delay_s = 10; //Delay in seconds for the pressure switch to enable after turning on circ pump
 
     void ioWrite(uint8_t pin, uint8_t state);
     uint8_t ioRead(uint8_t pin);

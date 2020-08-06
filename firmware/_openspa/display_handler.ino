@@ -21,7 +21,12 @@ void bbDisplayHandler(void)
       bb_display.printText(error_text);
     }
     else
-      bb_display.printDegrees(jacuzzi.currentTemperature(), false);
+    {
+      if((jacuzzi.currentTemperature() < (jacuzzi.desiredTemperature() - 0.5)) or (jacuzzi.currentTemperature() > (jacuzzi.desiredTemperature() + 0.5)))
+        bb_display.printDegrees(jacuzzi.currentTemperature(), false);
+      else
+        bb_display.printDegrees(jacuzzi.desiredTemperature(), false);
+    }
   }
   else
   {
