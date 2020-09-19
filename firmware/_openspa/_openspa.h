@@ -34,7 +34,9 @@ const uint16_t openspa_filter_time               = 3600;    //seconds
 const uint16_t openspa_flush_window_start_time   = 1000; //hours:minutes
 const uint16_t openspa_flush_window_stop_time    = 1800; //hours:minutes
 const uint16_t openspa_flush_daily_cycles        = 3;
-const uint16_t openspa_flush_time                = 60;   //seconds
+const uint16_t openspa_flush_time_pump_1         = 60;   //seconds
+const uint16_t openspa_flush_time_pump_2         = 60;   //seconds
+const uint16_t openspa_flush_time_blower         = 60;   //seconds
 
 //Maximum run time and rest time for pumps and blower in seconds
 const uint16_t openspa_runtime_pump_1      = 900;  //seconds
