@@ -29,7 +29,7 @@ class hot_tub
 
     void setMinTemperature(float min_temperature);
     void setMaxTemperature(float max_temperature);
-    void setDesiredTemperature(float desired_temperature);
+    bool setDesiredTemperature(float desired_temperature);
     void increaseDesiredTemperature();
     void decreaseDesiredTemperature();
     float currentTemperature();
@@ -43,7 +43,7 @@ class hot_tub
     void setPump_2_Power(uint16_t power);
     void setBlowerPower(uint16_t power);
 
-    void setPump_1(uint8_t state, uint8_t toggle); //2 speed, stage = 0x01 -> low, stage = 0x02 -> high
+    void setPump_1(uint8_t state, uint8_t toggle); //2 speed, state = 0x01 -> low, state = 0x02 -> high
     void setPump_2(uint8_t state, uint8_t toggle);
     void setBlower(uint8_t state, uint8_t toggle);
     void setLight(uint8_t state, uint8_t toggle);

@@ -695,10 +695,14 @@ void hot_tub::setMaxTemperature(float max_temperature)
   m_max_temperature_limit = max_temperature;
 }
 
-void hot_tub::setDesiredTemperature(float desired_temperature)
+bool hot_tub::setDesiredTemperature(float desired_temperature)
 {
   if ((desired_temperature <= m_max_temperature_limit) & (desired_temperature >= m_min_temperature_limit))
+  {
     m_desired_temperature = desired_temperature;
+    return false;
+  }
+  return true;
 }
 
 void hot_tub::increaseDesiredTemperature()
@@ -945,7 +949,7 @@ void hot_tub::setLight(uint8_t state, uint8_t toggle)
   if (toggle)
     m_periph_light.state = !m_periph_light.state;
   else
-    m_periph_ozone.state = state;
+    m_periph_light.state = state;
 
   if (state_prv != m_periph_light.state)
     this->ioWrite(m_periph_light.pin, m_periph_light.state);

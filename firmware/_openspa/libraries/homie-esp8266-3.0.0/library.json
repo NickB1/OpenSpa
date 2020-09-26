@@ -1,0 +1,47 @@
+{
+  "name": "Homie",
+  "version": "3.0.0",
+  "keywords": "iot, home, automation, mqtt, esp8266, async, sensor",
+  "description": "ESP8266 framework for Homie, a lightweight MQTT convention for the IoT",
+  "homepage": "https://homieiot.github.io/homie-esp8266/",
+  "license": "MIT",
+  "authors":
+  {
+    "name": "Marvin Roger",
+    "url": "https://www.marvinroger.fr",
+    "maintainer": true
+  },
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/homieiot/homie-esp8266.git",
+    "branch": "master"
+  },
+  "frameworks": "arduino",
+  "platforms": "espressif8266",
+  "dependencies": [
+    {
+      "name": "ArduinoJson",
+      "version": "^6.11.4"
+    },
+    {
+      "name": "AsyncMqttClient",
+      "version": "^0.8.0"
+    },
+    {
+      "name": "Bounce2",
+      "version": "^2.1.0"
+    },
+    {
+      "name": "ESP Async WebServer"
+    }
+  ],
+  "export": {
+    "include": [
+      "LICENSE",
+      "keywords.txt",
+      "src/*",
+      "examples/*"
+    ]
+  }
+}

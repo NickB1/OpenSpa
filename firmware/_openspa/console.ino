@@ -81,11 +81,6 @@ void consolePrintStatus()
   Serial.print("WiFi RSSI: ");
   Serial.print(WiFi.RSSI());
   Serial.println("dBm");
-  Serial.print("WiFi Reconnects: ");
-  Serial.println(wifi_reconnects);
-  Serial.print("MQTT Reconnects: ");
-  Serial.println(mqtt_reconnects);
-  Serial.println();
   Serial.println();
 }
 

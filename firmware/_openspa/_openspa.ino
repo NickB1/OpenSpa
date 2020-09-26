@@ -8,6 +8,10 @@
 #include "balboa_display.h"
 #include "wifi.h"
 
+#define TIMER_INTERVAL_MS        10
+
+//ESP8266Timer ITimer;
+
 hot_tub jacuzzi(epin_o_main,    epin_o_heater,          epin_o_circulation_pump,
                 epin_o_pump_1,  epin_o_pump_1_speed,    epin_o_pump_2,
                 epin_o_blower,  epin_o_ozone_generator, epin_o_light,
@@ -33,6 +37,9 @@ void setup()
 
 void loop()
 {
+  if (openspa_wifi_enable)
+    wifiHandler();
+
   openspaErrorHandler();
 
   if (openspa_error == false)
@@ -42,12 +49,7 @@ void loop()
 
   displayHandler();
   consoleHandler();
-
-  if (openspa_wifi_enable)
-    wifiHandler();
 }
-
-
 
 uint8_t jacuzziInit()
 {
