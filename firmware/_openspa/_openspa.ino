@@ -68,10 +68,10 @@ uint8_t jacuzziInit()
   jacuzzi.setPump_2_Timing(openspa_runtime_pump_2, openspa_resttime_pump_2);
   jacuzzi.setBlowerTiming(openspa_runtime_blower, openspa_resttime_blower);
 
-  jacuzzi.setFiltering(openspa_filter_window_start_time, openspa_filter_window_stop_time, openspa_ozone_window_start_time,
+  jacuzzi.setFilteringSettings(openspa_filter_window_start_time, openspa_filter_window_stop_time, openspa_ozone_window_start_time,
                        openspa_ozone_window_stop_time, openspa_filter_daily_cycles, openspa_filter_time);
-  jacuzzi.setHeating(openspa_heating_timeout, openspa_heating_timeout_delta_degrees);
-  jacuzzi.setFlushing(openspa_flush_window_start_time, openspa_flush_window_stop_time, openspa_flush_daily_cycles,
+  jacuzzi.setHeatingSettings(openspa_heating_timeout, openspa_heating_timeout_delta_degrees);
+  jacuzzi.setFlushingSettings(openspa_flush_window_start_time, openspa_flush_window_stop_time, openspa_flush_daily_cycles,
                       openspa_flush_time_pump_1, openspa_flush_time_pump_2, openspa_flush_time_blower);
 
   return 0;

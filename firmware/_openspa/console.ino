@@ -49,6 +49,8 @@ void consolePrintStatus()
   Serial.println(jacuzzi.maxTemperature(), 2);
   Serial.print("Filter status: ");
   Serial.println(jacuzzi.getFilteringStatus());
+  Serial.print("Heating enabled status: ");
+  Serial.println(jacuzzi.getHeatingEnabledState());
   Serial.print("Heating status: ");
   Serial.println(jacuzzi.getHeatingStatus());
   Serial.print("Filter next cycle time: ");

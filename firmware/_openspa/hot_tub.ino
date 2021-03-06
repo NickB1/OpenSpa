@@ -87,6 +87,8 @@ void hot_tub::reset()
   this->setLight(false, false);
   this->setOzone(false);
 
+  m_heating_enabled = true;
+
   m_status = 0;
   m_error_code = 0;
 
@@ -219,8 +221,8 @@ uint8_t hot_tub::errorChecking()
 
 
 
-void hot_tub::setFiltering(uint16_t filter_window_start_time, uint16_t filter_window_stop_time, uint16_t ozone_window_start_time,
-                           uint16_t ozone_window_stop_time, uint16_t filter_daily_cycles, uint16_t filter_time_s)
+void hot_tub::setFilteringSettings(uint16_t filter_window_start_time, uint16_t filter_window_stop_time, uint16_t ozone_window_start_time,
+                                   uint16_t ozone_window_stop_time, uint16_t filter_daily_cycles, uint16_t filter_time_s)
 {
   m_filter_window_start_time = filter_window_start_time;
   m_filter_window_stop_time = filter_window_stop_time;
@@ -230,14 +232,14 @@ void hot_tub::setFiltering(uint16_t filter_window_start_time, uint16_t filter_wi
   m_filter_time_s = filter_time_s;
 }
 
-void hot_tub::setHeating(uint16_t heating_timeout, float heating_timeout_delta_degrees)
+void hot_tub::setHeatingSettings(uint16_t heating_timeout, float heating_timeout_delta_degrees)
 {
   m_heating_timeout = heating_timeout;
   m_heating_timeout_delta_degrees = heating_timeout_delta_degrees;
 }
 
-void hot_tub::setFlushing(uint16_t flush_window_start_time, uint16_t flush_window_stop_time, uint16_t flush_daily_cycles,
-                          uint16_t flush_time_pump_1_s, uint16_t flush_time_pump_2_s, uint16_t flush_time_blower_s)
+void hot_tub::setFlushingSettings(uint16_t flush_window_start_time, uint16_t flush_window_stop_time, uint16_t flush_daily_cycles,
+                                  uint16_t flush_time_pump_1_s, uint16_t flush_time_pump_2_s, uint16_t flush_time_blower_s)
 {
   m_flush_window_start_time = flush_window_start_time;
   m_flush_window_stop_time = flush_window_stop_time;
@@ -342,19 +344,25 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
 void hot_tub::heating()
 {
   static unsigned long timestamp = 0;
-
-  if (timePassed(timestamp) >= m_heating_holdoff_time)
+  if (m_heating_enabled)
   {
-    if ((m_current_temperature - m_desired_temperature) <=  m_desired_temperature_delta_minus)
+    if (timePassed(timestamp) >= m_heating_holdoff_time)
     {
-      timestamp = timeStamp();
-      m_heating_run = true;
+      if ((m_current_temperature - m_desired_temperature) <=  m_desired_temperature_delta_minus)
+      {
+        timestamp = timeStamp();
+        m_heating_run = true;
+      }
+      else if ((m_current_temperature - m_desired_temperature) >=  m_desired_temperature_delta_plus)
+      {
+        timestamp = timeStamp();
+        m_heating_run = false;
+      }
     }
-    else if ((m_current_temperature - m_desired_temperature) >=  m_desired_temperature_delta_plus)
-    {
-      timestamp = timeStamp();
-      m_heating_run = false;
-    }
+  }
+  else
+  {
+    m_heating_run = false;
   }
 }
 
@@ -959,4 +967,20 @@ void hot_tub::setLight(uint8_t state, uint8_t toggle)
 uint8_t hot_tub::getLightState()
 {
   return m_periph_light.state;
+}
+
+
+
+
+void hot_tub::setHeatingEnabled(uint8_t state)
+{
+  if (state == true)
+    m_heating_enabled = true;
+  else
+    m_heating_enabled = false;
+}
+
+uint8_t hot_tub::getHeatingEnabledState()
+{
+  return m_heating_enabled;
 }

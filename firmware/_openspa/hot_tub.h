@@ -48,23 +48,26 @@ class hot_tub
     void setBlower(uint8_t state, uint8_t toggle);
     void setLight(uint8_t state, uint8_t toggle);
 
+    void    setHeatingEnabled(uint8_t state);
+    uint8_t getHeatingEnabledState();
+
     void setPump_1_Timing(uint16_t runtime, uint16_t resttime);
     void setPump_2_Timing(uint16_t runtime, uint16_t resttime);
     void setBlowerTiming(uint16_t runtime, uint16_t resttime);
 
-    void setFiltering(uint16_t filter_window_start_time, uint16_t filter_window_stop_time, uint16_t ozone_window_start_time,
+    void setFilteringSettings(uint16_t filter_window_start_time, uint16_t filter_window_stop_time, uint16_t ozone_window_start_time,
                       uint16_t ozone_window_stop_time, uint16_t filter_daily_cycles, uint16_t filter_time_s);
-    void setHeating(uint16_t heating_timeout, float heating_timeout_delta_degrees);
-    void setFlushing(uint16_t m_flush_window_start_time, uint16_t m_flush_window_stop_time, uint16_t flush_daily_cycles,
+    void setHeatingSettings(uint16_t heating_timeout, float heating_timeout_delta_degrees);
+    void setFlushingSettings(uint16_t m_flush_window_start_time, uint16_t m_flush_window_stop_time, uint16_t flush_daily_cycles,
                      uint16_t flush_time_pump_1_s, uint16_t flush_time_pump_2_s, uint16_t flush_time_blower_s);
 
-    uint8_t getStatus();
-    uint8_t getErrorCode();
-    uint8_t getFilteringStatus();
-    uint16_t getFilteringNextCycleTime();
-    uint8_t getHeatingStatus();
-    uint8_t getFlushingStatus();
-    uint16_t getFlushingNextCycleTime();
+    uint8_t   getStatus();
+    uint8_t   getErrorCode();
+    uint8_t   getFilteringStatus();
+    uint16_t  getFilteringNextCycleTime();
+    uint8_t   getHeatingStatus();
+    uint8_t   getFlushingStatus();
+    uint16_t  getFlushingNextCycleTime();
 
     uint8_t getHeaterState();
     uint8_t getCircPumpState();
@@ -135,7 +138,7 @@ class hot_tub
 
     uint16_t m_max_total_power = 0;
     uint16_t m_total_power = 0;
-    uint8_t m_filtering_run = 0, m_filtering_ozone_enabled = 0, m_heating_run = 0, m_flushing_run = 0;
+    uint8_t m_filtering_run = 0, m_filtering_ozone_enabled = 0, m_heating_enabled = 0, m_heating_run = 0, m_flushing_run = 0;
 
     const uint16_t m_pressure_switch_max_delay_s = 10; //Delay in seconds for the pressure switch to enable after turning on circ pump
 
