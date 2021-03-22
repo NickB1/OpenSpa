@@ -43,9 +43,14 @@ class hot_tub
     void setPump_2_Power(uint16_t power);
     void setBlowerPower(uint16_t power);
 
+    void setMain(uint8_t state);
+    void setMainOutput();
     void setPump_1(uint8_t state, uint8_t toggle); //2 speed, state = 0x01 -> low, state = 0x02 -> high
+    void setPump_1_Output();
     void setPump_2(uint8_t state, uint8_t toggle);
+    void setPump_2_Output();
     void setBlower(uint8_t state, uint8_t toggle);
+    void setBlowerOutput();
     void setLight(uint8_t state, uint8_t toggle);
 
     void    setHeatingEnabled(uint8_t state);
@@ -77,12 +82,15 @@ class hot_tub
     uint8_t getOzoneState();
     uint8_t getLightState();
 
+    uint8_t getPressureSwitchState();
+
   private:
 
     struct peripheral
     {
       uint8_t pin, pin_speed;
       uint8_t state;
+      uint8_t output_state;
       uint16_t power;
       unsigned long timestamp;
       uint16_t runtime;
@@ -112,8 +120,11 @@ class hot_tub
     const float m_desired_temperature_delta_plus = 0.5; //Heating OFF
     const float m_desired_temperature_delta_minus = -0.5; //Heating ON
 
-    const uint16_t m_filter_heater_state_delay_s = 5;
+    const uint16_t m_main_output_on_delay_s = 1;
+    const uint16_t m_main_output_off_delay_s = 5;
+    const uint16_t m_filter_heater_state_delay_s = 15;
     const uint16_t m_filter_heater_unpause_delay_s = 10;
+    const uint16_t m_pressure_switch_max_delay_s = 10; //Delay in seconds for the pressure switch to enable after turning on circ pump
     uint16_t m_heating_holdoff_time         = 60; //seconds
     uint16_t m_heating_timeout              = 3600; //seconds
     float m_heating_timeout_delta_degrees   = 1.0;
@@ -140,8 +151,6 @@ class hot_tub
     uint16_t m_total_power = 0;
     uint8_t m_filtering_run = 0, m_filtering_ozone_enabled = 0, m_heating_enabled = 0, m_heating_run = 0, m_flushing_run = 0;
 
-    const uint16_t m_pressure_switch_max_delay_s = 10; //Delay in seconds for the pressure switch to enable after turning on circ pump
-
     void ioWrite(uint8_t pin, uint8_t state);
     uint8_t ioRead(uint8_t pin);
     void readTemp();
@@ -153,6 +162,7 @@ class hot_tub
     uint16_t getNextCycleTime(uint16_t cycle_period);
 
     uint8_t errorChecking();
+    void outputController();
     void filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone);
     void heating();
     void filter_heater_state_machine(uint8_t reset);
@@ -161,10 +171,12 @@ class hot_tub
     void checkRuntime();
 
     void setHeater(uint8_t state);
+    void setHeaterOutput();
     void setCircPump(uint8_t state);
+    void setCircPumpOutput();
     void setOzone(uint8_t state);
+    void setOzoneOutput();
 
     uint8_t getPumpsAndBlowerState();
-    uint8_t getPressureSwitchState();
     uint8_t outOfUse();
 };

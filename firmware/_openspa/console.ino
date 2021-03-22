@@ -73,6 +73,8 @@ void consolePrintStatus()
   Serial.println(jacuzzi.getOzoneState());
   Serial.print("Light state: ");
   Serial.println(jacuzzi.getLightState());
+  Serial.print("Pressure switch state: ");
+  Serial.println(jacuzzi.getPressureSwitchState());
   Serial.println();
   Serial.println("WiFi");
   Serial.println("________________");

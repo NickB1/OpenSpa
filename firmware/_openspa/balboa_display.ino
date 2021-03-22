@@ -2,12 +2,12 @@
 balboa_display::balboa_display(uint8_t pin_o_data, uint8_t pin_i_button_data, uint8_t pin_o_clock) :
   m_pin_o_data(pin_o_data), m_pin_i_button_data(pin_i_button_data), m_pin_o_clock(pin_o_clock)
 {
-  this->ioMode(m_pin_o_data, OUTPUT);
-  this->ioMode(m_pin_i_button_data, INPUT);
-  this->ioMode(m_pin_o_clock, OUTPUT);
+  ioMode(m_pin_o_data, OUTPUT);
+  ioMode(m_pin_i_button_data, INPUT);
+  ioMode(m_pin_o_clock, OUTPUT);
 
-  this->ioWrite(m_pin_o_data, LOW);
-  this->ioWrite(m_pin_o_clock, LOW);
+  ioWrite(m_pin_o_data, LOW);
+  ioWrite(m_pin_o_clock, LOW);
 }
 
 void balboa_display::ioMode(uint8_t pin, uint8_t io_mode)
@@ -48,27 +48,27 @@ uint8_t balboa_display::poll()
 
     case 1: //set data
       if (bit_cntr >= balboa_display_data_bit_count) //Neglect last bit
-        this->ioWrite(m_pin_o_data, LOW);
+        ioWrite(m_pin_o_data, LOW);
       else
       {
-        this->ioWrite(m_pin_o_data, (0x01 & (display_data[byte_cntr] >> bit_cntr))); //LSB first
+        ioWrite(m_pin_o_data, (0x01 & (display_data[byte_cntr] >> bit_cntr))); //LSB first
       }
       state = 2;
       break;
 
     case 2: //set clock
       if (bit_cntr >= balboa_display_data_bit_count) //neglect first bit
-        this->ioWrite(m_pin_o_clock, LOW);
+        ioWrite(m_pin_o_clock, LOW);
       else
       {
-        this->ioWrite(m_pin_o_clock, HIGH);
+        ioWrite(m_pin_o_clock, HIGH);
       }
       state = 3;
       break;
 
     case 3: //reset clock
-      this->ioWrite(m_pin_o_clock, LOW);
-      if ((bit_cntr == 0) && (byte_cntr == 0) && (this->ioRead(m_pin_i_button_data) == 0)) //No display detected
+      ioWrite(m_pin_o_clock, LOW);
+      if ((bit_cntr == 0) && (byte_cntr == 0) && (ioRead(m_pin_i_button_data) == 0)) //No display detected
       {
         state = 0;
         time_prv = millis();
@@ -79,7 +79,7 @@ uint8_t balboa_display::poll()
         //Clock in button data
         if (byte_cntr == (balboa_display_data_byte_count - 1))
         {
-          write_byte_bit(&button_data, (0x01 & this->ioRead(m_pin_i_button_data)), bit_cntr); //Read in bit (LSB first)
+          write_byte_bit(&button_data, (0x01 & ioRead(m_pin_i_button_data)), bit_cntr); //Read in bit (LSB first)
         }
         state = 4;
       }
@@ -87,7 +87,7 @@ uint8_t balboa_display::poll()
       break;
 
     case 4: //reset data
-      this->ioWrite(m_pin_o_data, LOW);
+      ioWrite(m_pin_o_data, LOW);
       bit_cntr++;
       state = 1;
 

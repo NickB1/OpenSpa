@@ -1,4 +1,3 @@
-
 #include "ascii_to_7seg.h"
 
 const uint8_t   balboa_display_chars                = 4;

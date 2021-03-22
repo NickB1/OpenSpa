@@ -16,7 +16,7 @@ hot_tub::hot_tub(uint8_t pin_o_main,   uint8_t pin_o_heater,           uint8_t p
 
   m_pin_pressure_switch = pin_i_pressure_switch;
 
-  this->reset();
+  reset();
 }
 
 
@@ -35,14 +35,14 @@ uint8_t hot_tub::ioRead(uint8_t pin)
 void hot_tub::readTemp()
 {
   static unsigned long timestamp = 0;
-  if ((this->timePassed(timestamp)) > 1) //Sample every second
+  if ((timePassed(timestamp)) > 1) //Sample every second
   {
     m_current_temperature = thermistorRead();
     if (m_current_temperature > m_max_temperature)
     {
       m_max_temperature = m_current_temperature;
     }
-    timestamp = this->timeStamp();
+    timestamp = timeStamp();
   }
 }
 
@@ -79,13 +79,13 @@ uint16_t hot_tub::getTimeDiffDecimalHours(uint16_t time_start, uint16_t time_sto
 
 void hot_tub::reset()
 {
-  this->setHeater(false);
-  this->setCircPump(false);
-  this->setPump_1(false, false);
-  this->setPump_2(false, false);
-  this->setBlower(false, false);
-  this->setLight(false, false);
-  this->setOzone(false);
+  setHeater(false);
+  setCircPump(false);
+  setPump_1(false, false);
+  setPump_2(false, false);
+  setBlower(false, false);
+  setLight(false, false);
+  setOzone(false);
 
   m_heating_enabled = true;
 
@@ -97,13 +97,13 @@ void hot_tub::reset()
 
 void hot_tub::allOff()
 {
-  this->setHeater(false);
-  this->setCircPump(false);
-  this->setPump_1(false, false);
-  this->setPump_2(false, false);
-  this->setBlower(false, false);
-  this->setLight(false, false);
-  this->setOzone(false);
+  setHeater(false);
+  setCircPump(false);
+  setPump_1(false, false);
+  setPump_2(false, false);
+  setBlower(false, false);
+  setLight(false, false);
+  setOzone(false);
 }
 
 
@@ -111,22 +111,27 @@ void hot_tub::allOff()
 uint8_t hot_tub::poll()
 {
   uint8_t out_of_use = 0;
-  if (hot_tub_debug == 0)
-    this->errorChecking();
 
-  this->readTemp();
-  this->checkRuntime();
+  if (hot_tub_debug == 0)
+  {
+    errorChecking();
+  }
+
+  readTemp();
+  checkRuntime();
 
   if (m_error_code == 0)
   {
-    out_of_use = (this->outOfUse());
-    this->filtering(out_of_use, out_of_use); //Force filter cycle whitout ozone when out of use
-    this->heating();
-    this->filter_heater_state_machine(false);
-    this->flushing();
+    out_of_use = (outOfUse());
+    filtering(out_of_use, out_of_use); //Force filter cycle whitout ozone when out of use
+    heating();
+    filter_heater_state_machine(false);
+    flushing();
   }
   else
-    this->allOff();
+    allOff();
+
+  outputController();
 
   return m_error_code;
 }
@@ -141,10 +146,10 @@ uint8_t hot_tub::outOfUse()
   uint8_t out_of_use = 0;
 
   if ((getPumpsAndBlowerState() != 0) and (state_prv == 0)) //In use
-    timestamp = this->timeStamp();
+    timestamp = timeStamp();
   else if ((getPumpsAndBlowerState() == 0) and (state_prv != 0)) //Out of use
   {
-    if ((this->timePassed(timestamp) > min_usage_time_s))
+    if ((timePassed(timestamp) > min_usage_time_s))
     {
       out_of_use = 1;
     }
@@ -158,67 +163,135 @@ uint8_t hot_tub::outOfUse()
 
 uint8_t hot_tub::errorChecking()
 {
-  //Max Temperature
-  if (m_current_temperature > m_max_temperature_limit)
+  static unsigned long timestamp = 0;
+  if ((timePassed(timestamp)) > 2) //Sample every 2 seconds
   {
-    m_error_code = hot_tub_error_overtemp;
-  }
-
-  //Temp sensor
-  if ((m_current_temperature < 0) & (hot_tub_debug == 0))
-  {
-    m_error_code = hot_tub_error_temp_sensor;
-  }
-
-  //Heater
-  if (this->getHeaterState())
-  {
-    //Heater on without circulation pump
-    if (this->getCircPumpState() == false)
+    //Max Temperature
+    if (m_current_temperature > m_max_temperature_limit)
     {
-      m_error_code = hot_tub_error_heating_on_without_circ_pump;
+      m_error_code = hot_tub_error_overtemp;
     }
 
-    //Heater timeout
-    if ((this->timePassed(m_periph_heater.timestamp)) > m_heating_timeout)
+    //Temp sensor
+    if ((m_current_temperature < 0) & (hot_tub_debug == 0))
     {
-      if (m_current_temperature < (m_heating_initial_temperature + m_heating_timeout_delta_degrees))
+      m_error_code = hot_tub_error_temp_sensor;
+    }
+
+    //Heater
+    if (getHeaterState())
+    {
+      //Heater on without circulation pump
+      if (getCircPumpState() == false)
       {
-        m_error_code = hot_tub_error_heating_timeout;
+        m_error_code = hot_tub_error_heating_on_without_circ_pump;
+      }
+
+      //Heater timeout
+      if ((timePassed(m_periph_heater.timestamp)) > m_heating_timeout)
+      {
+        if (m_current_temperature < (m_heating_initial_temperature + m_heating_timeout_delta_degrees))
+        {
+          m_error_code = hot_tub_error_heating_timeout;
+        }
       }
     }
+    timestamp = timeStamp();
   }
 
   //Pressure switch always on
-  if ((this->getPressureSwitchState() == true) and (this->getCircPumpState() == false) and ((this->timePassed(m_periph_circ_pump.timestamp)) > m_pressure_switch_max_delay_s))
+  if (getCircPumpState() == false)
   {
-    m_error_code = hot_tub_error_pressure_switch_always_on;
+    if ((timePassed(m_periph_circ_pump.timestamp)) > m_pressure_switch_max_delay_s)
+    {
+      if (getPressureSwitchState() == true)
+      {
+        m_error_code = hot_tub_error_pressure_switch_always_on;
+      }
+    }
   }
 
-
   //Pressure switch failed
-  static uint8_t circ_pump_state_prv = 0;
-
-  if ((this->getCircPumpState() == true) and (circ_pump_state_prv = false))
+  if (getCircPumpState() == true)
   {
-    if ((this->timePassed(m_periph_circ_pump.timestamp)) > m_pressure_switch_max_delay_s)
+    if ((timePassed(m_periph_circ_pump.timestamp)) > m_pressure_switch_max_delay_s)
     {
-      if (this->getPressureSwitchState() == false)
+      if (getPressureSwitchState() == false)
       {
         m_error_code = hot_tub_error_pressure_switch_failed;
       }
-      circ_pump_state_prv = this->getCircPumpState();
     }
-  }
-  else
-  {
-    circ_pump_state_prv = this->getCircPumpState();
   }
 
   return m_error_code;
 }
 
+void hot_tub::outputController()
+{
+  static unsigned long timestamp = 0;
+  static uint8_t main_state = 0;
+  uint8_t peripheral_state = 0;
 
+  peripheral_state = (getHeaterState() |
+                      getCircPumpState() |
+                      getPump_1_State() |
+                      getPump_2_State() |
+                      getBlowerState() |
+                      getOzoneState());
+
+  switch (main_state)
+  {
+    case 0:
+      if (peripheral_state != 0)
+      {
+        timestamp = timeStamp();
+        setMain(true);
+        setMainOutput();
+        main_state = 1;
+      }
+      break;
+
+    case 1:
+      if ((timePassed(timestamp)) > m_main_output_on_delay_s)
+      {
+        main_state = 2;
+      }
+      break;
+
+    case 2:
+      setMainOutput();
+      setHeaterOutput();
+      setCircPumpOutput();
+      setPump_1_Output();
+      setPump_2_Output();
+      setBlowerOutput();
+      setOzoneOutput();
+
+      if (peripheral_state == 0)
+      {
+        timestamp = timeStamp();
+        main_state = 3;
+      }
+      break;
+
+    case 3:
+      if ((timePassed(timestamp)) > m_main_output_off_delay_s)
+      {
+        setMain(false);
+        setMainOutput();
+        main_state = 0;
+      }
+      else if (peripheral_state != 0)
+      {
+        main_state = 2;
+      }
+      break;
+
+    default:
+      main_state = 0;
+      break;
+  }
+}
 
 
 void hot_tub::setFilteringSettings(uint16_t filter_window_start_time, uint16_t filter_window_stop_time, uint16_t ozone_window_start_time,
@@ -262,7 +335,7 @@ uint16_t hot_tub::getNextCycleTime(uint16_t cycle_period)
 {
   uint16_t next_cycle = 0, hours = 0;
 
-  next_cycle = (this->getTimeOfDay() + cycle_period);
+  next_cycle = (getTimeOfDay() + cycle_period);
   hours = next_cycle / 100;
   next_cycle -= (hours * 100);
   if (next_cycle >= 60)
@@ -280,10 +353,10 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
   static unsigned long timestamp = 0;
   enum enum_filtering_state { idle, start_filtering, filtering };
   static enum_filtering_state filtering_state = start_filtering; //start filtering on startup
-  static uint16_t cycle_period = this->getCyclePeriod(m_filter_window_start_time, m_filter_window_stop_time, m_filter_time_s, m_filter_daily_cycles);
+  static uint16_t cycle_period = getCyclePeriod(m_filter_window_start_time, m_filter_window_stop_time, m_filter_time_s, m_filter_daily_cycles);
   static uint8_t filter_cycle = 0;
 
-  time_of_day = this->getTimeOfDay();
+  time_of_day = getTimeOfDay();
 
   if (force_filter_cycle)
   {
@@ -316,19 +389,19 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
       break;
 
     case start_filtering:
-      m_filter_next_cycle_time = this->getNextCycleTime(cycle_period);
+      m_filter_next_cycle_time = getNextCycleTime(cycle_period);
       if ((m_filter_next_cycle_time < m_filter_window_start_time) or (m_filter_next_cycle_time > m_filter_window_stop_time))
       {
         m_filter_next_cycle_time = m_filter_window_start_time;
       }
-      timestamp = this->timeStamp();
+      timestamp = timeStamp();
       filter_cycle++;
       m_filtering_run = true;
       filtering_state = filtering;
       break;
 
     case filtering:
-      if ((this->timePassed(timestamp)) >= m_filter_time_s) //check if done
+      if ((timePassed(timestamp)) >= m_filter_time_s) //check if done
       {
         m_filtering_run = false;
         filtering_state = idle;
@@ -385,34 +458,37 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
 
       if (m_filtering_run | m_heating_run)
       {
-        if ((this->getPumpsAndBlowerState()) == 0) //only start when all pumps and blower are turned off
+        if ((getPumpsAndBlowerState()) == 0) //only start when all pumps and blower are turned off
           filter_heater_state = start_pump;
       }
 
-      this->setCircPump(false);
-      this->setHeater(false);
-      this->setOzone(false);
+      setCircPump(false);
+      setHeater(false);
+      setOzone(false);
 
       break;
 
     case start_pump:
-      if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
+      if (getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
         filter_heater_state = pause;
 
-      this->setCircPump(true);
+      setCircPump(true);
 
       if (m_filtering_ozone_enabled)
-        this->setOzone(true);
+        setOzone(true);
 
       if (m_heating_run == true)
+      {
         filter_heater_state = start_heater;
+        timestamp = timeStamp();
+      }
       else if (m_filtering_run == true)
         filter_heater_state = filtering;
 
       break;
 
     case filtering:
-      if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
+      if (getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
         filter_heater_state = pause;
 
       m_status = hot_tub_status_filtering;
@@ -420,31 +496,31 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
       if (m_filtering_run == false)
       {
         filter_heater_state = idle;
-        this->setCircPump(false);
-        this->setOzone(false);
+        setCircPump(false);
+        setOzone(false);
       }
       else if (m_heating_run == true)
       {
         filter_heater_state = start_heater;
-        timestamp = this->timeStamp();
+        timestamp = timeStamp();
       }
 
       break;
 
     case start_heater:
-      if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
+      if (getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
         filter_heater_state = pause;
 
-      if ((this->timePassed(timestamp)) >= m_filter_heater_state_delay_s)
+      if ((timePassed(timestamp)) >= m_filter_heater_state_delay_s)
       {
-        this->setHeater(true);
+        setHeater(true);
         filter_heater_state = heating;
-        timestamp = this->timeStamp();
+        timestamp = timeStamp();
       }
       break;
 
     case heating:
-      if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
+      if (getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
         filter_heater_state = pause;
 
       if (m_filtering_run)
@@ -452,11 +528,11 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
       else
         m_status = hot_tub_status_heating;
 
-      if ((this->timePassed(timestamp)) >= m_filter_heater_state_delay_s)
+      if ((timePassed(timestamp)) >= m_filter_heater_state_delay_s)
       {
         if (m_heating_run == false)
         {
-          this->setHeater(false);
+          setHeater(false);
           filter_heater_state = filtering;
         }
       }
@@ -464,29 +540,29 @@ void hot_tub::filter_heater_state_machine(uint8_t reset)
       break;
 
     case pause:
-      this->setCircPump(false);
-      this->setHeater(false);
-      this->setOzone(false);
+      setCircPump(false);
+      setHeater(false);
+      setOzone(false);
 
-      if (this->getPumpsAndBlowerState() == 0) //only start back up when all pumps and blower are turned off
+      if (getPumpsAndBlowerState() == 0) //only start back up when all pumps and blower are turned off
       {
-        timestamp = this->timeStamp();
+        timestamp = timeStamp();
         filter_heater_state = unpause;
       }
       break;
 
     case unpause:
-      if (this->getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
+      if (getPumpsAndBlowerState()) //Pause when a pump or blower is enabled
         filter_heater_state = pause;
 
-      if ((this->timePassed(timestamp)) > m_filter_heater_unpause_delay_s)
+      if ((timePassed(timestamp)) > m_filter_heater_unpause_delay_s)
         filter_heater_state = idle;
       break;
 
     default:
-      this->setCircPump(false);
-      this->setHeater(false);
-      this->setOzone(false);
+      setCircPump(false);
+      setHeater(false);
+      setOzone(false);
       filter_heater_state = idle;
       break;
   }
@@ -498,12 +574,12 @@ void hot_tub::flushing()
   static unsigned long timestamp = 0;
   enum enum_flushing_state { idle, start_flushing, start_blower, flushing_blower, start_pump_1, flushing_pump_1, start_pump_2,  flushing_pump_2 };
   static enum_flushing_state flushing_state = start_flushing;
-  static uint16_t cycle_period = this->getCyclePeriod(m_flush_window_start_time, m_flush_window_stop_time, m_flush_time_pump_1_s, m_flush_daily_cycles);
+  static uint16_t cycle_period = getCyclePeriod(m_flush_window_start_time, m_flush_window_stop_time, m_flush_time_pump_1_s, m_flush_daily_cycles);
   static uint8_t flush_cycle = 0;
   uint8_t flush_inter_delay_s = 3;
   static uint8_t pumps_and_blower_state_prv = 0, flushing_started = 0;
 
-  time_of_day = this->getTimeOfDay();
+  time_of_day = getTimeOfDay();
 
   if ((m_flush_window_start_time <= time_of_day) and (m_flush_window_stop_time >= time_of_day))
   {
@@ -512,14 +588,14 @@ void hot_tub::flushing()
     switch (flushing_state)
     {
       case idle:
-        if (this->getPumpsAndBlowerState()) //Hold off flushing when pumps or blower are in use
+        if (getPumpsAndBlowerState()) //Hold off flushing when pumps or blower are in use
         {
           pumps_and_blower_state_prv = 1;
         }
         else if (pumps_and_blower_state_prv == 1)
         {
           pumps_and_blower_state_prv = 0;
-          m_flush_next_cycle_time = this->getNextCycleTime(cycle_period);
+          m_flush_next_cycle_time = getNextCycleTime(cycle_period);
         }
         else
         {
@@ -530,21 +606,21 @@ void hot_tub::flushing()
         break;
 
       case start_flushing:
-        m_flush_next_cycle_time = this->getNextCycleTime(cycle_period);
+        m_flush_next_cycle_time = getNextCycleTime(cycle_period);
         if (m_flush_next_cycle_time > m_flush_window_stop_time)
         {
           m_flush_next_cycle_time = m_flush_window_start_time;
         }
-        timestamp = this->timeStamp();
+        timestamp = timeStamp();
         flush_cycle++;
         flushing_state = start_blower;
         m_flushing_run = 1;
         break;
 
       case start_blower:
-        if ((this->timePassed(timestamp)) >= flush_inter_delay_s)
+        if ((timePassed(timestamp)) >= flush_inter_delay_s)
         {
-          timestamp = this->timeStamp();
+          timestamp = timeStamp();
           if (m_flush_time_blower_s > 0)
           {
             setBlower(true, false);
@@ -558,18 +634,18 @@ void hot_tub::flushing()
         break;
 
       case flushing_blower:
-        if ((this->timePassed(timestamp)) >= m_flush_time_blower_s)
+        if ((timePassed(timestamp)) >= m_flush_time_blower_s)
         {
-          timestamp = this->timeStamp();
+          timestamp = timeStamp();
           setBlower(false, false);
           flushing_state = start_pump_1;
         }
         break;
 
       case start_pump_1:
-        if ((this->timePassed(timestamp)) >= flush_inter_delay_s)
+        if ((timePassed(timestamp)) >= flush_inter_delay_s)
         {
-          timestamp = this->timeStamp();
+          timestamp = timeStamp();
           if (m_flush_time_pump_1_s > 0)
           {
             setPump_1(true, false);
@@ -584,18 +660,18 @@ void hot_tub::flushing()
         break;
 
       case flushing_pump_1:
-        if ((this->timePassed(timestamp)) >= m_flush_time_pump_1_s)
+        if ((timePassed(timestamp)) >= m_flush_time_pump_1_s)
         {
-          timestamp = this->timeStamp();
+          timestamp = timeStamp();
           setPump_1(false, false);
           flushing_state = start_pump_2;
         }
         break;
 
       case start_pump_2:
-        if ((this->timePassed(timestamp)) >= flush_inter_delay_s)
+        if ((timePassed(timestamp)) >= flush_inter_delay_s)
         {
-          timestamp = this->timeStamp();
+          timestamp = timeStamp();
           if (m_flush_time_pump_2_s > 0)
           {
             setPump_2(true, false);
@@ -609,9 +685,9 @@ void hot_tub::flushing()
         break;
 
       case flushing_pump_2:
-        if ((this->timePassed(timestamp)) >= m_flush_time_pump_2_s)
+        if ((timePassed(timestamp)) >= m_flush_time_pump_2_s)
         {
-          timestamp = this->timeStamp();
+          timestamp = timeStamp();
           setPump_2(false, false);
           flushing_state = idle;
         }
@@ -642,14 +718,14 @@ void hot_tub::flushing()
 
 void hot_tub::checkRuntime()
 {
-  if (this->getPump_1_State() and ((this->timePassed(m_periph_pump_1.timestamp)) >= m_periph_pump_1.runtime))
-    this->setPump_1(false, false);
+  if (getPump_1_State() and ((timePassed(m_periph_pump_1.timestamp)) >= m_periph_pump_1.runtime))
+    setPump_1(false, false);
 
-  if (this->getPump_2_State() and ((this->timePassed(m_periph_pump_2.timestamp)) >= m_periph_pump_2.runtime))
-    this->setPump_2(false, false);
+  if (getPump_2_State() and ((timePassed(m_periph_pump_2.timestamp)) >= m_periph_pump_2.runtime))
+    setPump_2(false, false);
 
-  if (this->getBlowerState() and ((this->timePassed(m_periph_blower.timestamp)) >= m_periph_blower.runtime))
-    this->setBlower(false, false);
+  if (getBlowerState() and ((timePassed(m_periph_blower.timestamp)) >= m_periph_blower.runtime))
+    setBlower(false, false);
 }
 
 
@@ -729,7 +805,7 @@ void hot_tub::decreaseDesiredTemperature()
 
 float hot_tub::currentTemperature()
 {
-  this->readTemp();
+  readTemp();
   return m_current_temperature;
 }
 
@@ -752,6 +828,22 @@ void hot_tub::setMaxTotalPower(uint16_t power)
 }
 
 
+void hot_tub::setMain(uint8_t state)
+{
+  m_periph_main.state = state;
+  m_periph_main.timestamp = timeStamp();
+}
+
+void hot_tub::setMainOutput()
+{
+  if (m_periph_main.output_state != m_periph_main.state)
+  {
+    ioWrite(m_periph_main.pin, m_periph_main.state);
+    m_periph_main.output_state =  m_periph_main.state;
+  }
+}
+
+
 
 
 void hot_tub::setHeaterPower(uint16_t power)
@@ -761,13 +853,18 @@ void hot_tub::setHeaterPower(uint16_t power)
 
 void hot_tub::setHeater(uint8_t state)
 {
-  if (m_periph_heater.state != state)
+  m_periph_heater.state = state;
+  m_periph_heater.timestamp = timeStamp();
+}
+
+void hot_tub::setHeaterOutput()
+{
+  if (m_periph_heater.output_state != m_periph_heater.state)
   {
-    m_periph_heater.state = state;
-    this->ioWrite(m_periph_heater.pin, m_periph_heater.state);
+    ioWrite(m_periph_heater.pin, m_periph_heater.state);
+    m_periph_heater.output_state = m_periph_heater.state;
+    m_heating_initial_temperature = m_current_temperature;
   }
-  m_heating_initial_temperature = m_current_temperature;
-  m_periph_heater.timestamp = this->timeStamp();
 }
 
 uint8_t hot_tub::getHeaterState()
@@ -785,12 +882,17 @@ void hot_tub::setCircPumpPower(uint16_t power)
 
 void hot_tub::setCircPump(uint8_t state)
 {
-  if (m_periph_circ_pump.state != state)
+  m_periph_circ_pump.state = state;
+  m_periph_circ_pump.timestamp = timeStamp();
+}
+
+void hot_tub::setCircPumpOutput()
+{
+  if (m_periph_circ_pump.output_state != m_periph_circ_pump.state)
   {
-    m_periph_circ_pump.state = state;
-    this->ioWrite(m_periph_circ_pump.pin, m_periph_circ_pump.state);
+    ioWrite(m_periph_circ_pump.pin, m_periph_circ_pump.state);
+    m_periph_circ_pump.output_state = m_periph_circ_pump.state;
   }
-  m_periph_circ_pump.timestamp = this->timeStamp();
 }
 
 uint8_t hot_tub::getCircPumpState()
@@ -801,10 +903,7 @@ uint8_t hot_tub::getCircPumpState()
 
 uint8_t hot_tub::getPressureSwitchState()
 {
-  if (hot_tub_debug)
-    return (this -> getCircPumpState());
-  else
-    return (!(this->ioRead(m_pin_pressure_switch))); //Active low
+  return (!(ioRead(m_pin_pressure_switch))); //Active low
 }
 
 
@@ -823,9 +922,6 @@ void hot_tub::setPump_1_Timing(uint16_t runtime, uint16_t resttime)
 
 void hot_tub::setPump_1(uint8_t state, uint8_t toggle)
 {
-  static uint8_t state_prv = 0;
-  state_prv = m_periph_pump_1.state;
-
   if (toggle)
   {
     m_periph_pump_1.state += 1;
@@ -840,14 +936,18 @@ void hot_tub::setPump_1(uint8_t state, uint8_t toggle)
     m_periph_pump_1.state = state;
   }
 
-  if (state_prv != m_periph_pump_1.state)
+  m_periph_pump_1.timestamp = timeStamp();
+}
+
+void hot_tub::setPump_1_Output()
+{
+  if (m_periph_pump_1.output_state != m_periph_pump_1.state)
   {
 
-    this->ioWrite(m_periph_pump_1.pin, (((m_periph_pump_1.state) | (m_periph_pump_1.state >> 1)) & 0x01));
-    this->ioWrite(m_periph_pump_1.pin_speed, ((m_periph_pump_1.state >> 1) & 0x01));
+    ioWrite(m_periph_pump_1.pin, (((m_periph_pump_1.state) | (m_periph_pump_1.state >> 1)) & 0x01));
+    ioWrite(m_periph_pump_1.pin_speed, ((m_periph_pump_1.state >> 1) & 0x01));
+    m_periph_pump_1.output_state = m_periph_pump_1.state;
   }
-
-  m_periph_pump_1.timestamp = this->timeStamp();
 }
 
 uint8_t hot_tub::getPump_1_State()
@@ -871,18 +971,21 @@ void hot_tub::setPump_2_Timing(uint16_t runtime, uint16_t resttime)
 
 void hot_tub::setPump_2(uint8_t state, uint8_t toggle)
 {
-  static uint8_t state_prv = 0;
-  state_prv = m_periph_pump_2.state;
-
   if (toggle)
     m_periph_pump_2.state = !m_periph_pump_2.state;
   else
     m_periph_pump_2.state = state;
 
-  if (state_prv != m_periph_pump_2.state)
-    this->ioWrite(m_periph_pump_2.pin, m_periph_pump_2.state);
+  m_periph_pump_2.timestamp = timeStamp();
+}
 
-  m_periph_pump_2.timestamp = this->timeStamp();
+void hot_tub::setPump_2_Output()
+{
+  if (m_periph_pump_2.output_state != m_periph_pump_2.state)
+  {
+    ioWrite(m_periph_pump_2.pin, m_periph_pump_2.state);
+    m_periph_pump_2.output_state = m_periph_pump_2.state;
+  }
 }
 
 uint8_t hot_tub::getPump_2_State()
@@ -906,18 +1009,21 @@ void hot_tub::setBlowerTiming(uint16_t runtime, uint16_t resttime)
 
 void hot_tub::setBlower(uint8_t state, uint8_t toggle)
 {
-  static uint8_t state_prv = 0;
-  state_prv = m_periph_blower.state;
-
   if (toggle)
     m_periph_blower.state = !m_periph_blower.state;
   else
     m_periph_blower.state = state;
 
-  if (state_prv != m_periph_blower.state)
-    this->ioWrite(m_periph_blower.pin, m_periph_blower.state);
+  m_periph_blower.timestamp = timeStamp();
+}
 
-  m_periph_blower.timestamp = this->timeStamp();
+void hot_tub::setBlowerOutput()
+{
+  if (m_periph_blower.output_state != m_periph_blower.state)
+  {
+    ioWrite(m_periph_blower.pin, m_periph_blower.state);
+    m_periph_blower.output_state = m_periph_blower.state;
+  }
 }
 
 uint8_t hot_tub::getBlowerState()
@@ -927,16 +1033,22 @@ uint8_t hot_tub::getBlowerState()
 
 uint8_t hot_tub::getPumpsAndBlowerState()
 {
-  return ((this->getPump_1_State()) or (this->getPump_2_State()) or (this->getBlowerState()));
+  return ((getPump_1_State()) or (getPump_2_State()) or (getBlowerState()));
 }
 
 
 void hot_tub::setOzone(uint8_t state)
 {
-  if (m_periph_ozone.state != state)
+  m_periph_ozone.state = state;
+  ioWrite(m_periph_ozone.pin, m_periph_ozone.state);
+}
+
+void hot_tub::setOzoneOutput()
+{
+  if (m_periph_ozone.output_state != m_periph_ozone.state)
   {
-    m_periph_ozone.state = state;
-    this->ioWrite(m_periph_ozone.pin, m_periph_ozone.state);
+    ioWrite(m_periph_ozone.pin, m_periph_ozone.state);
+    m_periph_ozone.output_state = m_periph_ozone.state;
   }
 }
 
@@ -960,7 +1072,7 @@ void hot_tub::setLight(uint8_t state, uint8_t toggle)
     m_periph_light.state = state;
 
   if (state_prv != m_periph_light.state)
-    this->ioWrite(m_periph_light.pin, m_periph_light.state);
+    ioWrite(m_periph_light.pin, m_periph_light.state);
 
 }
 

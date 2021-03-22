@@ -32,7 +32,9 @@ void setup()
     wifiInit();
   delay(10);
   consolePrintCommands();
-  setMainRelay(true);
+  
+  /*pinMode(pin_io_onewire, OUTPUT); 
+  analogWrite(pin_io_onewire, 512); //Working*/
 }
 
 void loop()
@@ -42,10 +44,7 @@ void loop()
 
   openspaErrorHandler();
 
-  if (openspa_error == false)
-    openspa_error = jacuzzi.poll();
-  else
-    setMainRelay(false);
+  openspa_error = jacuzzi.poll();
 
   displayHandler();
   consoleHandler();
@@ -104,15 +103,4 @@ void openspaReset()
   digitalWrite(pin_o_io_expander_reset, HIGH);
   jacuzzi.reset();
   openspa_error = 0;
-}
-
-void setMainRelay(uint8_t state)
-{
-  static uint8_t current_state = 0;
-
-  if (state != current_state)
-  {
-    current_state = state;
-    ioExpanderWrite(epin_o_main, state);
-  }
 }
