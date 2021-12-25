@@ -22,14 +22,22 @@ hot_tub::hot_tub(uint8_t pin_o_main,   uint8_t pin_o_heater,           uint8_t p
 
 //External functions
 
-void hot_tub::ioWrite(uint8_t pin, uint8_t state)
+uint8_t hot_tub::ioWrite(uint8_t pin, uint8_t state)
 {
   ioExpanderWrite(pin, state);
+  //return 0;
+  return (!(ioExpanderRead(pin) == state));
 }
 
 uint8_t hot_tub::ioRead(uint8_t pin)
 {
   return ioExpanderRead(pin);
+}
+
+uint8_t hot_tub::setPWM(uint8_t duty_cycle)
+{
+  pwmWrite(duty_cycle);
+  return 0;
 }
 
 void hot_tub::readTemp()
@@ -173,7 +181,7 @@ uint8_t hot_tub::errorChecking()
     }
 
     //Temp sensor
-    if ((m_current_temperature < 0) & (hot_tub_debug == 0))
+    if ((m_current_temperature < 0) && (hot_tub_debug == 0))
     {
       m_error_code = hot_tub_error_temp_sensor;
     }
@@ -188,7 +196,8 @@ uint8_t hot_tub::errorChecking()
       }
 
       //Heater timeout
-      if ((timePassed(m_periph_heater.timestamp)) > m_heating_timeout)
+      //Heating with pwm control causes longer heating times, so best to not do this check when enabled
+      if (((timePassed(m_periph_heater.timestamp)) > m_heating_timeout) && (!m_heating_pwm_enabled))
       {
         if (m_current_temperature < (m_heating_initial_temperature + m_heating_timeout_delta_degrees))
         {
@@ -241,7 +250,7 @@ void hot_tub::outputController()
 
   switch (main_state)
   {
-    case 0:
+    case 0: //Set main relay when a peripheral is set
       if (peripheral_state != 0)
       {
         timestamp = timeStamp();
@@ -249,16 +258,33 @@ void hot_tub::outputController()
         setMainOutput();
         main_state = 1;
       }
+      setHeaterPWM_ON_OFF(false);
       break;
 
-    case 1:
+    case 1: //Wait
       if ((timePassed(timestamp)) > m_main_output_on_delay_s)
       {
         main_state = 2;
+        timestamp = timeStamp();
       }
       break;
 
-    case 2:
+    case 2: //Set peripheral relais, stay here as long as a certain peripheral is set
+
+      if (m_heating_pwm_enabled)
+      {
+        if (getHeaterState())
+        {
+          if ((timePassed(timestamp)) > m_main_output_on_delay_s)
+            setHeaterPWM_ON_OFF(true);
+        }
+        else
+        {
+          setHeaterPWM_ON_OFF(false);
+          timestamp = timeStamp();
+        }
+      }
+
       setMainOutput();
       setHeaterOutput();
       setCircPumpOutput();
@@ -274,7 +300,7 @@ void hot_tub::outputController()
       }
       break;
 
-    case 3:
+    case 3: //Wait m_main_output_off_delay_s to turn main relay off when all peripherals are off, jump back to previous state if a peripheral is set
       if ((timePassed(timestamp)) > m_main_output_off_delay_s)
       {
         setMain(false);
@@ -305,8 +331,10 @@ void hot_tub::setFilteringSettings(uint16_t filter_window_start_time, uint16_t f
   m_filter_time_s = filter_time_s;
 }
 
-void hot_tub::setHeatingSettings(uint16_t heating_timeout, float heating_timeout_delta_degrees)
+void hot_tub::setHeatingSettings(uint8_t heating_pwm, uint16_t heating_min_power, uint16_t heating_timeout, float heating_timeout_delta_degrees)
 {
+  m_heating_pwm_enabled = heating_pwm;
+  m_heating_min_power = heating_min_power;
   m_heating_timeout = heating_timeout;
   m_heating_timeout_delta_degrees = heating_timeout_delta_degrees;
 }
@@ -417,7 +445,7 @@ void hot_tub::filtering(uint8_t force_filter_cycle, uint8_t force_no_ozone)
 void hot_tub::heating()
 {
   static unsigned long timestamp = 0;
-  if (m_heating_enabled)
+  if (m_heating_enabled | (hot_tub_debug == 1))
   {
     if (timePassed(timestamp) >= m_heating_holdoff_time)
     {
@@ -781,7 +809,7 @@ void hot_tub::setMaxTemperature(float max_temperature)
 
 bool hot_tub::setDesiredTemperature(float desired_temperature)
 {
-  if ((desired_temperature <= m_max_temperature_limit) & (desired_temperature >= m_min_temperature_limit))
+  if ((desired_temperature <= m_max_temperature_limit) && (desired_temperature >= m_min_temperature_limit))
   {
     m_desired_temperature = desired_temperature;
     return false;
@@ -838,17 +866,87 @@ void hot_tub::setMainOutput()
 {
   if (m_periph_main.output_state != m_periph_main.state)
   {
-    ioWrite(m_periph_main.pin, m_periph_main.state);
-    m_periph_main.output_state =  m_periph_main.state;
+    if (ioWrite(m_periph_main.pin, m_periph_main.state) == 0)
+      m_periph_main.output_state =  m_periph_main.state;
   }
 }
 
 
 
 
+void hot_tub::setHeatingEnabled(uint8_t state)
+{
+  if (state == true)
+    m_heating_enabled = true;
+  else
+    m_heating_enabled = false;
+}
+
+uint8_t hot_tub::getHeatingEnabledState()
+{
+  return m_heating_enabled;
+}
+
+void hot_tub::setHeatingPower(uint16_t power)
+{
+  if (power <= m_periph_heater.power)
+  {
+    if (power <= m_heating_min_power)
+      m_heating_power = m_heating_min_power;
+    else
+      m_heating_power = power;
+  }
+  else
+    m_heating_power = m_periph_heater.power;
+}
+
+uint16_t hot_tub::getHeatingPower()
+{
+  return m_heating_power;
+}
+
+uint8_t hot_tub::getHeatingPwmDutyCycle()
+{
+  return m_current_pwm_duty_cycle;
+}
+
 void hot_tub::setHeaterPower(uint16_t power)
 {
   m_periph_heater.power = power;
+  m_heating_power = power; //Set max heating power initially
+}
+
+void hot_tub::setHeaterPWM_ON_OFF(uint8_t state)
+{
+  if (state)
+  {
+    //Formula: duty_cycle = (relative_power * 41) + 15 - Kemo M150 + M028N transfer function
+
+    float relative_power = ((float) m_heating_power / (float) m_periph_heater.power);
+    uint8_t duty_cycle = (int) ((relative_power * 41) + 15);
+
+    if (duty_cycle >= 60) //max power starts at 60% duty cycle
+      duty_cycle = 100;
+      
+
+    if (m_current_pwm_duty_cycle != duty_cycle)
+    {
+      if (hot_tub::setPWM(duty_cycle) == 0)
+      {
+        m_current_pwm_duty_cycle = duty_cycle;
+      }
+    }
+  }
+  else
+  {
+    if (m_current_pwm_duty_cycle != 0)
+    {
+      if (hot_tub::setPWM(0) == 0)
+      {
+        m_current_pwm_duty_cycle = 0;
+      }
+    }
+  }
 }
 
 void hot_tub::setHeater(uint8_t state)
@@ -861,8 +959,9 @@ void hot_tub::setHeaterOutput()
 {
   if (m_periph_heater.output_state != m_periph_heater.state)
   {
-    ioWrite(m_periph_heater.pin, m_periph_heater.state);
-    m_periph_heater.output_state = m_periph_heater.state;
+    if (ioWrite(m_periph_heater.pin, m_periph_heater.state) == 0)
+      m_periph_heater.output_state = m_periph_heater.state;
+
     m_heating_initial_temperature = m_current_temperature;
   }
 }
@@ -890,8 +989,8 @@ void hot_tub::setCircPumpOutput()
 {
   if (m_periph_circ_pump.output_state != m_periph_circ_pump.state)
   {
-    ioWrite(m_periph_circ_pump.pin, m_periph_circ_pump.state);
-    m_periph_circ_pump.output_state = m_periph_circ_pump.state;
+    if (ioWrite(m_periph_circ_pump.pin, m_periph_circ_pump.state) == 0)
+      m_periph_circ_pump.output_state = m_periph_circ_pump.state;
   }
 }
 
@@ -943,10 +1042,9 @@ void hot_tub::setPump_1_Output()
 {
   if (m_periph_pump_1.output_state != m_periph_pump_1.state)
   {
-
-    ioWrite(m_periph_pump_1.pin, (((m_periph_pump_1.state) | (m_periph_pump_1.state >> 1)) & 0x01));
-    ioWrite(m_periph_pump_1.pin_speed, ((m_periph_pump_1.state >> 1) & 0x01));
-    m_periph_pump_1.output_state = m_periph_pump_1.state;
+    if ((ioWrite(m_periph_pump_1.pin, (((m_periph_pump_1.state) | (m_periph_pump_1.state >> 1)) & 0x01)) == 0) &&
+        (ioWrite(m_periph_pump_1.pin_speed, ((m_periph_pump_1.state >> 1) & 0x01)) == 0))
+      m_periph_pump_1.output_state = m_periph_pump_1.state;
   }
 }
 
@@ -983,8 +1081,8 @@ void hot_tub::setPump_2_Output()
 {
   if (m_periph_pump_2.output_state != m_periph_pump_2.state)
   {
-    ioWrite(m_periph_pump_2.pin, m_periph_pump_2.state);
-    m_periph_pump_2.output_state = m_periph_pump_2.state;
+    if (ioWrite(m_periph_pump_2.pin, m_periph_pump_2.state) == 0)
+      m_periph_pump_2.output_state = m_periph_pump_2.state;
   }
 }
 
@@ -1021,8 +1119,8 @@ void hot_tub::setBlowerOutput()
 {
   if (m_periph_blower.output_state != m_periph_blower.state)
   {
-    ioWrite(m_periph_blower.pin, m_periph_blower.state);
-    m_periph_blower.output_state = m_periph_blower.state;
+    if (ioWrite(m_periph_blower.pin, m_periph_blower.state) == 0)
+      m_periph_blower.output_state = m_periph_blower.state;
   }
 }
 
@@ -1040,15 +1138,14 @@ uint8_t hot_tub::getPumpsAndBlowerState()
 void hot_tub::setOzone(uint8_t state)
 {
   m_periph_ozone.state = state;
-  ioWrite(m_periph_ozone.pin, m_periph_ozone.state);
 }
 
 void hot_tub::setOzoneOutput()
 {
   if (m_periph_ozone.output_state != m_periph_ozone.state)
   {
-    ioWrite(m_periph_ozone.pin, m_periph_ozone.state);
-    m_periph_ozone.output_state = m_periph_ozone.state;
+    if (ioWrite(m_periph_ozone.pin, m_periph_ozone.state) == 0)
+      m_periph_ozone.output_state = m_periph_ozone.state;
   }
 }
 
@@ -1062,37 +1159,22 @@ uint8_t hot_tub::getOzoneState()
 
 void hot_tub::setLight(uint8_t state, uint8_t toggle)
 {
-  static uint8_t state_prv = 0;
-
-  state_prv = m_periph_light.state;
+  uint8_t state_new = 0;
 
   if (toggle)
-    m_periph_light.state = !m_periph_light.state;
+    state_new = !m_periph_light.state;
   else
-    m_periph_light.state = state;
+    state_new = state;
 
-  if (state_prv != m_periph_light.state)
-    ioWrite(m_periph_light.pin, m_periph_light.state);
+  if (state_new != m_periph_light.state)
+  {
+    if (ioWrite(m_periph_light.pin, state_new) == 0)
+      m_periph_light.state = state_new;
+  }
 
 }
 
 uint8_t hot_tub::getLightState()
 {
   return m_periph_light.state;
-}
-
-
-
-
-void hot_tub::setHeatingEnabled(uint8_t state)
-{
-  if (state == true)
-    m_heating_enabled = true;
-  else
-    m_heating_enabled = false;
-}
-
-uint8_t hot_tub::getHeatingEnabledState()
-{
-  return m_heating_enabled;
 }

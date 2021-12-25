@@ -6,6 +6,7 @@ HomieNode homiePump1Node        ("pump1"                , "Pump 1"              
 HomieNode homiePump2Node        ("pump2"                , "Pump 2"              , "switch");
 HomieNode homieBlowerNode       ("blower"               , "Blower"              , "switch");
 HomieNode homieHeatingNode      ("heating"              , "Heating"             , "switch");
+HomieNode homieHeatingPowerNode ("heatingpower"         , "Heating Power"       , "status");
 HomieNode homieLightNode        ("light"                , "Light"               , "switch");
 HomieNode homieTemperatureNode  ("temperature"          , "Temperature"         , "temperature");
 
@@ -22,10 +23,13 @@ uint8_t wifiInit()
   homiePump1Node.advertise("state").setDatatype("integer").settable(homiePump1Handler);
   homiePump2Node.advertise("state").setDatatype("boolean").settable(homiePump2Handler);
   homieBlowerNode.advertise("state").setDatatype("boolean").settable(homieBlowerHandler);
-  homieHeatingNode.advertise("state").setDatatype("boolean").settable(homieheatingHandler);
+  homieHeatingNode.advertise("state").setDatatype("boolean").settable(homieHeatingHandler);
+  homieHeatingPowerNode.advertise("state").setDatatype("integer").settable(homieHeatingPowerHandler);
   homieLightNode.advertise("state").setDatatype("boolean").settable(homieLightHandler);
   homieTemperatureNode.advertise("current").setDatatype("float").setUnit("ºC");
   homieTemperatureNode.advertise("desired").setDatatype("float").setUnit("ºC").settable(homieTempHandler);
+  homieTemperatureNode.advertise("internal").setDatatype("float").setUnit("ºC");
+  homieTemperatureNode.advertise("external").setDatatype("float").setUnit("ºC");
 
   Homie.disableLedFeedback();
   //Homie.setLedPin(16, HIGH);
@@ -46,9 +50,12 @@ void homieLoopHandler()
     homiePump2Node.setProperty("state").send(String(jacuzzi.getPump_2_State() ? "true" : "false"));
     homieBlowerNode.setProperty("state").send(String(jacuzzi.getBlowerState() ? "true" : "false"));
     homieHeatingNode.setProperty("state").send(String(jacuzzi.getHeatingEnabledState() ? "true" : "false"));
+    homieHeatingPowerNode.setProperty("state").send(String(jacuzzi.getHeatingPower()));
     homieLightNode.setProperty("state").send(String(jacuzzi.getLightState() ? "true" : "false"));
     homieTemperatureNode.setProperty("current").send(String(jacuzzi.currentTemperature()));
     homieTemperatureNode.setProperty("desired").send(String(jacuzzi.desiredTemperature()));
+    homieTemperatureNode.setProperty("internal").send(String(ds18s20_1.getTemperature()));
+    homieTemperatureNode.setProperty("external").send(String(ds18s20_2.getTemperature()));
     millis_prv = millis();
   }
 }
@@ -99,7 +106,7 @@ bool homieBlowerHandler(const HomieRange& range, const String& value)
   return false;
 }
 
-bool homieheatingHandler(const HomieRange& range, const String& value)
+bool homieHeatingHandler(const HomieRange& range, const String& value)
 {
   if (value == "true")
   {
@@ -114,6 +121,14 @@ bool homieheatingHandler(const HomieRange& range, const String& value)
     return true;
   }
   return false;
+}
+
+bool homieHeatingPowerHandler(const HomieRange& range, const String& value)
+{
+  uint16_t power = value.toInt() & 0xFFFF;
+  jacuzzi.setHeatingPower(power);
+  homieHeatingPowerNode.setProperty("state").send(value);
+  return true;
 }
 
 bool homieLightHandler(const HomieRange& range, const String& value)

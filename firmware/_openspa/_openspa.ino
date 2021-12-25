@@ -1,16 +1,14 @@
 #include "_openspa.h"
 #include "console.h"
 #include "io.h"
-#include "i2c.h"
 #include "onewire.h"
 #include "io_expander.h"
+#include "pwm.h"
 #include "hot_tub.h"
 #include "balboa_display.h"
 #include "wifi.h"
 
 #define TIMER_INTERVAL_MS        10
-
-//ESP8266Timer ITimer;
 
 hot_tub jacuzzi(epin_o_main,    epin_o_heater,          epin_o_circulation_pump,
                 epin_o_pump_1,  epin_o_pump_1_speed,    epin_o_pump_2,
@@ -25,16 +23,13 @@ void setup()
 {
   consoleInit();
   ioInit();
-  i2cInit();
   ioExpanderInit();
+  pwmInit();
   jacuzziInit();
   if (openspa_wifi_enable)
     wifiInit();
   delay(10);
   consolePrintCommands();
-  
-  /*pinMode(pin_io_onewire, OUTPUT); 
-  analogWrite(pin_io_onewire, 512); //Working*/
 }
 
 void loop()
@@ -48,6 +43,13 @@ void loop()
 
   displayHandler();
   consoleHandler();
+
+  onewire_poll();
+  //oneWireSearch(); //You can use this function to search for new onewire devices and add the address in _openspa.h file
+
+  #ifdef ESP8266
+    yield();
+  #endif
 }
 
 uint8_t jacuzziInit()
@@ -69,7 +71,7 @@ uint8_t jacuzziInit()
 
   jacuzzi.setFilteringSettings(openspa_filter_window_start_time, openspa_filter_window_stop_time, openspa_ozone_window_start_time,
                        openspa_ozone_window_stop_time, openspa_filter_daily_cycles, openspa_filter_time);
-  jacuzzi.setHeatingSettings(openspa_heating_timeout, openspa_heating_timeout_delta_degrees);
+  jacuzzi.setHeatingSettings(openspa_heating_pwm, openspa_heating_min_power, openspa_heating_timeout, openspa_heating_timeout_delta_degrees);
   jacuzzi.setFlushingSettings(openspa_flush_window_start_time, openspa_flush_window_stop_time, openspa_flush_daily_cycles,
                       openspa_flush_time_pump_1, openspa_flush_time_pump_2, openspa_flush_time_blower);
 

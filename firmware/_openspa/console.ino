@@ -53,6 +53,10 @@ void consolePrintStatus()
   Serial.println(jacuzzi.getHeatingEnabledState());
   Serial.print("Heating status: ");
   Serial.println(jacuzzi.getHeatingStatus());
+  Serial.print("Heating power: ");
+  Serial.println(jacuzzi.getHeatingPower());
+  Serial.print("Heating PWM duty cycle: ");
+  Serial.println(jacuzzi.getHeatingPwmDutyCycle());
   Serial.print("Filter next cycle time: ");
   Serial.printf("%04d",jacuzzi.getFilteringNextCycleTime());
   Serial.println();
@@ -76,6 +80,13 @@ void consolePrintStatus()
   Serial.print("Pressure switch state: ");
   Serial.println(jacuzzi.getPressureSwitchState());
   Serial.println();
+  Serial.println("OneWire");
+  Serial.println("________________");
+  Serial.print("Internal Temperature: ");
+  Serial.println(ds18s20_1.getTemperature());
+  Serial.print("Jet Pump Temperature: ");
+  Serial.println(ds18s20_2.getTemperature());
+  Serial.println();
   Serial.println("WiFi");
   Serial.println("________________");
   Serial.print("Status: ");
@@ -86,6 +97,9 @@ void consolePrintStatus()
   Serial.print(WiFi.RSSI());
   Serial.println("dBm");
   Serial.println();
+
+
+  
 }
 
 void consoleHandler()

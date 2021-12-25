@@ -1,5 +1,4 @@
 
-#include <Wire.h>
 #include "Adafruit_MCP23017.h"
 
 Adafruit_MCP23017 io_expander;
