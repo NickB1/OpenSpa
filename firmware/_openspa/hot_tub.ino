@@ -219,9 +219,8 @@ uint8_t hot_tub::errorChecking()
       }
     }
   }
-
   //Pressure switch failed
-  if (getCircPumpState() == true)
+  else if (getCircPumpState() == true)
   {
     if ((timePassed(m_periph_circ_pump.timestamp)) > m_pressure_switch_max_delay_s)
     {
@@ -990,7 +989,10 @@ void hot_tub::setCircPumpOutput()
   if (m_periph_circ_pump.output_state != m_periph_circ_pump.state)
   {
     if (ioWrite(m_periph_circ_pump.pin, m_periph_circ_pump.state) == 0)
+    {
       m_periph_circ_pump.output_state = m_periph_circ_pump.state;
+      m_periph_circ_pump.timestamp = timeStamp(); //Added extra timestamp for error checking to only start after pump is actually running
+    }
   }
 }
 

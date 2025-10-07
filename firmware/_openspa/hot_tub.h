@@ -129,7 +129,7 @@ class hot_tub
     const uint16_t m_main_output_off_delay_s = 15;
     const uint16_t m_filter_heater_state_delay_s = 15;
     const uint16_t m_filter_heater_unpause_delay_s = 10;
-    const uint16_t m_pressure_switch_max_delay_s = 10; //Delay in seconds for the pressure switch to enable after turning on circ pump
+    const uint16_t m_pressure_switch_max_delay_s = 15; //Delay in seconds for the pressure switch to enable after turning on circ pump
     uint8_t m_heating_pwm_enabled = 0;
     uint16_t m_heating_min_power = 500;
     uint16_t m_heating_power = 0;

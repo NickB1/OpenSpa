@@ -1,6 +1,7 @@
 
 const uint8_t console_print_status      = 's';
 const uint8_t console_print_commands    = 'c';
+const uint8_t console_reset             = 'r';
 
 uint8_t consoleInit()
 {
@@ -16,6 +17,7 @@ void consolePrintCommands()
 {
   Serial.println("Commands");
   Serial.println("________________________________");
+  Serial.println("r: Reset");
   Serial.println("s: Print Status");
   Serial.println("c: Print Commands");
   Serial.println();
@@ -115,6 +117,11 @@ void consoleHandler()
 
       case console_print_commands:
         consolePrintCommands();
+        break;
+
+      case console_reset:
+        Serial.println("Resetting");
+        ESP.reset();
         break;
 
       default:

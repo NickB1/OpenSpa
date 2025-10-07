@@ -5,8 +5,8 @@ const uint8_t   openspa_wifi_enable =     1;
 #define         openspa_ntp_servers       "europe.pool.ntp.org", "time.nist.gov"
 
 //Maximum - minimum temperatures
-const float openspa_init_desired_temp   = 37.5;
-const float openspa_max_temperature     = 40.0;
+const float openspa_init_desired_temp   = 38.0;
+const float openspa_max_temperature     = 45.0;
 const float openspa_min_temperature     = 5.0;
 
 //Heating
